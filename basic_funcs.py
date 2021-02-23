@@ -17,4 +17,15 @@ def path_process(path):
         break
     return db
 
+def get_nominal_V(path):
+    nominal_v = []
+    with open(path, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            try:
+                nominal_v.append(float(row[0]))
+            except ValueError:
+                pass
+    return np.array(nominal_v)
+
 
