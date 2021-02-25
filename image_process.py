@@ -1,15 +1,10 @@
-from external_imports import *
-from iv_parser import *
+from PIL import Image
+from scipy import ndimage as nd # Gausian filter
+from interactivecrop.interactivecrop import main as crop # Cropping window
+from copy import deepcopy # So we don't screw up raw arrays that we act on
 
-def GetNominalV(path):
-    nominal_v = []
-    corosponding_I = []
-    with open(path, 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            nominal_v.append(float(row[0]))
-            corosponding_I.append(float(row[1]))
-    return nominal_v, corosponding_I
+from external_imports import *
+from basic_funcs import *
 
 def averager(basepath, filenames):
     temp = np.array(Image.open(basepath+'\\'+filenames[0]))
@@ -25,14 +20,45 @@ def averager(basepath, filenames):
     del buffer # unnescesary but just in case
     return average_arr
 
-def find_tif(datapath):
-    raw_paths = []
-    for _, _, files in os.walk(datapath):
-        for file in files:
-            if file.endswith(".tif"): # Only interested in tifs
-                raw_paths.append(file)
-        break
-    return raw_paths
+def white_nonunif(imarr, center_row, center_col, diam):
+    pix_in_powermeter = []
+    for i in range(imarr.shape[0]):
+        for j in range(imarr.shape[1]):
+            if( (i-center_row)**2 + (j-center_col)**2) <= (diam/2)**2:
+                pix_in_powermeter.append(imarr[i,j])
+    cal_arr = deepcopy(imarr)
+    return cal_arr/ np.mean(pix_in_powermeter)
+
+white_buffer=[None, None, None, None]
+def callback_return_size(image_name, shape):
+    colstart, rowstart, width, height = shape.size
+    rowend = rowstart+height
+    colend = colstart+width
+    
+    white_buffer[0] = rowstart
+    white_buffer[1] = rowend
+    white_buffer[2] = colstart
+    white_buffer[3] = colend
+
+
+cell_borders={}
+def callback_return_pix_size(image_name, shape):
+    colstart, rowstart, width, height = shape.size
+    rowend = rowstart+height
+    colend = colstart+width
+    
+    pix_buffer=[]
+    pix_buffer.append(rowstart)
+    pix_buffer.append(rowend)
+    pix_buffer.append(colstart)
+    pix_buffer.append(colend)
+
+    cell_borders[image_name] = pix_buffer
+
+
+
+'''
+OLD FUNCTIONS: MAY USE SOME DAY LATER
 
 def white_mask_maker(imarr):
     rows, cols = imarr.shape
@@ -66,33 +92,8 @@ def white_mask_maker(imarr):
     
     return (rmin,rmax,cmin,cmax)
 
-def white_nonunif(imarr, center_row, center_col, diam):
-    pix_in_powermeter = []
-    for i in range(imarr.shape[0]):
-        for j in range(imarr.shape[1]):
-            if( (i-center_row)**2 + (j-center_col)**2) <= (diam/2)**2:
-                pix_in_powermeter.append(imarr[i,j])
-    cal_arr = deepcopy(imarr)
-    return cal_arr/ np.mean(pix_in_powermeter)
 
-white_buffer=[None, None, None, None]
-def callback_return_size(image_name, shape):
-    colstart, rowstart, width, height = shape.size
-    rowend = rowstart+height
-    colend = colstart+width
-    
-    white_buffer[0] = rowstart
-    white_buffer[1] = rowend
-    white_buffer[2] = colstart
-    white_buffer[3] = colend
 
-pix_buffer=[None, None, None, None]
-def callback_return_pix_size(image_name, shape):
-    colstart, rowstart, width, height = shape.size
-    rowend = rowstart+height
-    colend = colstart+width
-    
-    pix_buffer[0] = rowstart
-    pix_buffer[1] = rowend
-    pix_buffer[2] = colstart
-    pix_buffer[3] = colend
+
+
+'''
