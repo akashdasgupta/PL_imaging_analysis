@@ -16,7 +16,7 @@ def averager(basepath, filenames):
         im = np.array(Image.open(basepath+'\\'+filename), dtype=np.float32) # So there's enough headroom for the uint16
         buffer += im
         del im # unnescesary but just in case
-    average_arr = buffer / len(basepath+'\\'+filename)
+    average_arr = buffer / len(filenames)
     del buffer # unnescesary but just in case
     return average_arr
 
