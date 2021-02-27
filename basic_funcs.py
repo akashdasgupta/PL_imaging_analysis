@@ -33,7 +33,7 @@ def image_for_cropping(db, basepath):
     for key in db.keys():
         for pix in db[key]:
             image_names = find_tif(basepath+'\\'+key+'\\'+str(pix)+'\\camera')
-            nominal_vs = [float('.'.join(i.split('_')[1].split('.')[:-1])) for i in image_names]
+            nominal_vs = [i.split('_')[1].split('=')[1] for i in image_names]
             max_filename = image_names[np.argmax(nominal_vs)]
             im = np.array(Image.open(basepath+'\\'+key+'\\'+str(pix)+'\\camera\\'+max_filename))
             im_scaled = im *(2**(8)/np.max(im)) # 8bit 
