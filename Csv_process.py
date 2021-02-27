@@ -8,6 +8,14 @@ def GetNominalV(path):
             nominal_v.append(float(row[0]))
     return np.array(nominal_v)
 
+def GetExposureList(path):
+    exposures = []
+    with open(f"{path}\\camera\\exposure_list.csv", 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            exposures.append(float(row[1]))
+    return np.array(exposures)
+
 def get_sm_data(path, illuminated_area):
     v = []
     i = []
@@ -28,7 +36,7 @@ def nominalV2sunscale(nominal_vs, bandgap, lef_int_func):
     scale_photons = lef_int_func(nominal_vs)
     return scale_photons/one_sun
 
-def white_over_cell_correction(white_exposure, cell_exposure, led_specf, cell_specf, 
+def white_over_cell_correction(white_exposure, led_specf, cell_specf, 
                           bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
     wavel_range =  np.arange(300, 1000, 1)
 
@@ -40,7 +48,7 @@ def white_over_cell_correction(white_exposure, cell_exposure, led_specf, cell_sp
     filter_OD = filterODf(wavel_range)
 
     white_factor =  integrate.simps((led_spec*cam_QE*lens_cal), wavel_range*1e-9) / integrate.simps(led_spec, wavel_range*1e-9)
-    white_factor *= (white_exposure/cell_exposure) * white_reflectivity
+    white_factor *= white_exposure * white_reflectivity
 
     cell_factor = integrate.simps((cell_spec*cam_QE*lens_cal*filter_OD), wavel_range*1e-9) / integrate.simps(cell_spec, wavel_range*1e-9)
 
