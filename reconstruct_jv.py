@@ -3,7 +3,7 @@ from image_process import *
 
 def single_pixel_jv(path, row, col, jsc, voc_rad,
                     nominal_vs, solar_scale_list, int_nonunif, 
-                    white_imarr, white_voltage, white_scale_factor, ref):
+                    white_imarr, white_voltage, white_scale_factor, cell_exposure_lists, ref):
     rrs = []
     num_suns = []
     Js = []
@@ -12,11 +12,16 @@ def single_pixel_jv(path, row, col, jsc, voc_rad,
     filenames = find_tif(path)
 
     for k in range(len(nominal_vs)):
-        datapoint =  np.array(Image.open(path+'\\'+filenames[k]))[row,col] - ref[row,col]
+        for candidate_filename in filenames:
+            if float(candidate_filename.split('_')[1].split('=')[1]) == nominal_vs[k]:
+                filename = candidate_filename
+
+        datapoint =  np.array(Image.open(path+'\\'+filename))[row,col] - ref[row,col]
+        print(datapoint)
         num_sun = solar_scale_list[k] * int_nonunif[row, col]
         if num_sun > 1:
             continue
-        rr = datapoint * white_scale_factor / (white_imarr[row, col]*(ledf(nominal_vs[k])/ledf(white_voltage)))
+        rr = datapoint * (white_scale_factor/cell_exposure_lists[k]) / (white_imarr[row, col]*(ledf(nominal_vs[k])/ledf(white_voltage)))
 
         J = jsc * num_sun
         V = voc_rad + (sci.k*298/sci.e)*np.log(rr)
