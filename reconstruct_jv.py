@@ -1,36 +1,38 @@
 from external_imports import *
 from image_process import *
 
-def single_pixel_jv(path, row, col, jsc, voc_rad,
+def single_pixel_jv(pathvoc, pathisc, row, col, voc_rad,
                     nominal_vs, solar_scale_list, int_nonunif, 
-                    white_imarr, white_voltage, white_scale_factor, cell_exposure_lists, ref):
-    rrs = []
+                    white_imarr, white_voltage, white_scale_factor, cell_exposure_lists, 
+                    ref_voc, ref_isc, ave_rad=5):
+    PLQEs = []
     num_suns = []
-    Js = []
     Vs = []
 
-    filenames = find_tif(path)
-
+    filenames_voc = find_tif(pathvoc)    
+    filenames_isc = find_tif(pathisc)
+    
     for k in range(len(nominal_vs)):
-        for candidate_filename in filenames:
+        for candidate_filename in filenames_voc:
             if float(candidate_filename.split('_')[1].split('=')[1]) == nominal_vs[k]:
-                filename = candidate_filename
+                filename_voc = candidate_filename
+        for candidate_filename in filenames_isc:
+            if float(candidate_filename.split('_')[1].split('=')[1]) == nominal_vs[k]:
+                filename_isc = candidate_filename
 
-        datapoint =  np.array(Image.open(path+'\\'+filename))[row,col] - ref[row,col]
-        print(datapoint)
-        num_sun = solar_scale_list[k] * int_nonunif[row, col]
-        if num_sun > 1:
-            continue
-        rr = datapoint * (white_scale_factor/cell_exposure_lists[k]) / (white_imarr[row, col]*(ledf(nominal_vs[k])/ledf(white_voltage)))
+        datapoint_voc =  np.mean(np.array(Image.open(pathvoc+'\\'+filename_voc))[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad]- ref_voc[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad])
+        datapoint_isc =  np.mean(np.array(Image.open(pathisc+'\\'+filename_isc))[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad]- ref_isc[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad])
+        
+        datapoint = datapoint_voc-datapoint_isc
+        num_sun = solar_scale_list[k] * np.mean(int_nonunif[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad])
+        PLQE = datapoint * (white_scale_factor/cell_exposure_lists[k]) / (np.mean(white_imarr[row-ave_rad:row+ave_rad,col-ave_rad:col+ave_rad])*(ledf(nominal_vs[k])/ledf(white_voltage)))
+        V = voc_rad + (sci.k*298/sci.e)*np.log(PLQE)
 
-        J = jsc * num_sun
-        V = voc_rad + (sci.k*298/sci.e)*np.log(rr)
-
-        rrs.append(rr)
+        PLQEs.append(PLQE)
         num_suns.append(num_sun)
-        Js.append(J)
         Vs.append(V)
-    return np.array(num_suns), np.array(rrs), np.array(Vs), np.array(Js)
+
+    return np.array(num_suns), np.array(PLQEs), np.array(Vs)
 
 def array_jv(path, rmin, rmax, cmin, cmax, jsc, voc_rad,
                     nominal_vs, solar_scale_list, int_nonunif, 
