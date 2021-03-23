@@ -2,11 +2,15 @@ from PIL import Image
 from scipy import ndimage as nd # Gausian filter
 from interactivecrop.interactivecrop import main as crop # Cropping window
 from copy import deepcopy # So we don't screw up raw arrays that we act on
+from scipy.ndimage import gaussian_filter
 
 from external_imports import *
 from basic_funcs import *
 
 def averager(basepath, filenames):
+    '''
+    Opens and returns average of tiff files
+    '''
     temp = np.array(Image.open(basepath+'\\'+filenames[0]))
     rows, cols = temp.shape
     del temp
@@ -20,7 +24,13 @@ def averager(basepath, filenames):
     del buffer # unnescesary but just in case
     return average_arr
 
+
 def white_nonunif(imarr, center_row, center_col, diam):
+    """
+    Returns array corosponding to per-pixel scale factor for photodiode measured flux
+    * Takes mean of area equal to photodiode area, and sets this mean as the photodiode measurement
+    * Normalises then for nonuniformaty
+    """
     pix_in_powermeter = []
     for i in range(imarr.shape[0]):
         for j in range(imarr.shape[1]):
@@ -28,6 +38,16 @@ def white_nonunif(imarr, center_row, center_col, diam):
                 pix_in_powermeter.append(imarr[i,j])
     cal_arr = deepcopy(imarr)
     return cal_arr/ np.mean(pix_in_powermeter)
+
+def beam_correct(imarr, white_imarr_norm, ledv, rmin, rmax, cmin, cmax):
+    cropped_white_norm = white_imarr_norm[rmin:rmax, cmin:cmax]
+    cropped_raw_image = imarr[rmin:rmax, cmin:cmax]
+
+    overall_photon_flux = ledf(ledv)
+    photon_flux_on_cell = np.mean(cropped_white_norm)*overall_photon_flux
+
+    return photon_flux_on_cell, (cropped_raw_image/cropped_white_norm)*np.mean(cropped_white_norm)
+
 
 white_buffer=[None, None, None, None]
 def callback_return_size(image_name, shape):
@@ -55,45 +75,3 @@ def callback_return_pix_size(image_name, shape):
 
     cell_borders[image_name] = pix_buffer
 
-
-
-'''
-OLD FUNCTIONS: MAY USE SOME DAY LATER
-
-def white_mask_maker(imarr):
-    rows, cols = imarr.shape
-    white_blurred = nd.gaussian_filter(imarr, 10)
-    thresholded_arr = np.zeros((white_blurred.shape))
-    half_max = np.max(white_blurred)/2.1
-    for i in range(rows):
-        for j in range(cols):
-            if white_blurred[i,j] > half_max:
-                thresholded_arr[i,j] = 0
-            else:
-                thresholded_arr[i,j] = 1
-    rmin, cmin = (0,0)
-    rmax,cmax = (rows,cols)
-    for i in range(rows):
-        if np.sum(thresholded_arr[i,:]) < cols:
-            rmin = i
-            break
-    for j in range(cols):
-        if np.sum(thresholded_arr[:,j]) < rows:
-            cmin = j
-            break
-    for i in range(rows):
-        if np.sum(thresholded_arr[rows-1-i,:]) < cols:
-            rmax =rows-1-i
-            break
-    for j in range(cols):
-        if np.sum(thresholded_arr[:,cols-1-j]) < rows:
-            cmax = cols-1-j
-            break
-    
-    return (rmin,rmax,cmin,cmax)
-
-
-
-
-
-'''
