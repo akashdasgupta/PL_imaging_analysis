@@ -1,6 +1,6 @@
 from external_imports import *
 
-def GetNominalV(path):
+def get_nominal_v(path):
     nominal_v = []
     with open(f"{path}\\LED_power_supply.csv", 'r') as file:
         reader = csv.reader(file)
@@ -8,7 +8,7 @@ def GetNominalV(path):
             nominal_v.append(float(row[0]))
     return np.array(nominal_v)
 
-def GetExposureList(path):
+def get_exposure_list(path):
     exposures = []
     with open(f"{path}\\camera\\exposure_list.csv", 'r') as file:
         reader = csv.reader(file)
@@ -31,11 +31,6 @@ def get_sm_data(path, illuminated_area):
     i /= illuminated_area
     return v,i
 
-def nominalV2sunscale(nominal_vs, bandgap, lef_int_func):
-    one_sun = j1sunf(bandgap)
-    scale_photons = lef_int_func(nominal_vs)
-    return scale_photons/one_sun
-
 def white_over_cell_correction(white_exposure, led_specf, cell_specf, 
                           bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
     wavel_range =  np.arange(300, 1000, 1)
@@ -54,7 +49,7 @@ def white_over_cell_correction(white_exposure, led_specf, cell_specf,
 
     return white_factor/cell_factor
 
-def cam_exposure_puller(path):
+def get_cam_exposure(path):
     with open(path+'\\camera\\camera_setting_dump.txt') as file:
         for line in file:
             db = eval(line)
