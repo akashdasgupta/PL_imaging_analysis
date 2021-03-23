@@ -6,14 +6,25 @@ from scipy import constants as sci
 from scipy.interpolate import interp1d as inter
 import scipy.integrate as integrate
 
+#######################################################################################
 # camera pixel to area at focal plane:
-pixels_per_cm = (207095/0.25)**0.5 # root of pixel area/ known area from cell pic
-photodiode_diam_pix = pixels_per_cm*1.2
 
+with open(r".\calibration_data\camera_pixel_area.csv", 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        pix = float(row[0])
+        area = float(row[1])
+
+pixels_per_cm = (pix/area)**0.5 # root of pixel area/ known area from cell pic
+photodiode_diam_pix = pixels_per_cm*1.2
+del pix
+del area
+#######################################################################################
 # LED powermeter calibration:
+
 nominal_v_cal = []
 num_photons = []
-with open("ledcal.csv", 'r') as file:
+with open(r".\calibration_data\ledcal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         nominal_v_cal.append(float(row[0]))
@@ -21,11 +32,12 @@ with open("ledcal.csv", 'r') as file:
 ledf = inter(nominal_v_cal,num_photons) # function
 del nominal_v_cal # Free up memory
 del num_photons
-
+#######################################################################################
 # LED spectrum (From Thorlabs):
+
 led_spec_wavel = []
 led_spec = []
-with open("ledwavel.csv", 'r') as file:
+with open(r".\calibration_data\ledwavel.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         led_spec_wavel.append(float(row[0]))
@@ -33,20 +45,23 @@ with open("ledwavel.csv", 'r') as file:
 ledspecf = inter(led_spec_wavel, led_spec)
 del led_spec_wavel
 del led_spec
-
+#######################################################################################
 # Room temperature black body:
-BBf = lambda wavel_bb: (100 * (560 / wavel_bb) ** 5 * (((np.exp((1.435 * 10 ** 7) / (298 * 560)) - 1) / 
-                            (np.exp((1.435 * 10 ** 7) / (298 * wavel_bb)) - 1)))) 
+
+BBf = lambda wavel_bb: (100 * (560 / wavel_bb) ** 5 * (((np.exp((1.435 * 10 ** 7) 
+                        / (298 * 560)) - 1) / (np.exp((1.435 * 10 ** 7) / 
+                        (298 * wavel_bb)) - 1)))) 
 def BBf_cellf(wavel, bandgap): 
     if (sci.h*sci.c/(wavel*1e-9*sci.e) > bandgap):
         return BBf(wavel) 
     else:
         return 0
-
+#######################################################################################
 # Camera Quantum efficiency: 
+
 cam_qe_wavel = []
 cam_qe = []
-with open("camqe.csv", 'r') as file:
+with open(r".\calibration_data\camqe.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         cam_qe_wavel.append(float(row[0]))
@@ -54,11 +69,12 @@ with open("camqe.csv", 'r') as file:
 camqef = inter(cam_qe_wavel, cam_qe)
 del cam_qe_wavel
 del cam_qe
-
+#######################################################################################
 # Filter response function:
+
 filt_cal_wavel = []
 filt_cal = []
-with open("filtcal.csv", 'r') as file:
+with open(r".\calibration_data\filtcal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         filt_cal_wavel.append(float(row[0]))
@@ -66,11 +82,12 @@ with open("filtcal.csv", 'r') as file:
 filtcalf = inter(filt_cal_wavel, filt_cal)
 del filt_cal_wavel
 del filt_cal
-
+#######################################################################################
 # Lens calibration (alledgely):
+
 lens_cal_wavel = []
 lens_cal = []
-with open("lenscal.csv", 'r') as file:
+with open(r".\calibration_data\lenscal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         lens_cal_wavel.append(float(row[0]))
@@ -78,11 +95,12 @@ with open("lenscal.csv", 'r') as file:
 lenscalf = inter(lens_cal_wavel, lens_cal)
 del lens_cal_wavel
 del lens_cal
-
+#######################################################################################
 # J_1sun (from AM1.5 spectrup)
+
 bandgap_i = []
 am_1_5 = []
-with open("AM_1_5_photon.csv", 'r') as file:
+with open(r".\calibration_data\AM_1_5_photon.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         bandgap_i.append(float(row[0]))
@@ -90,13 +108,14 @@ with open("AM_1_5_photon.csv", 'r') as file:
 am15f = inter(bandgap_i, am_1_5)
 del bandgap_i
 del am_1_5
-j1sunf = lambda bandgap : integrate.simps(am15f(np.arange(bandgap,4,0.001)), np.arange(bandgap,4,0.001))
-
+j1sunf = lambda bandgap : integrate.simps(am15f(np.arange(bandgap,4,0.001)),
+                                          np.arange(bandgap,4,0.001))
+#######################################################################################
 # Voc, radiative limit:
 
 bandgap_v = []
 voc_rad = []
-with open("voc_rad_eg.csv", 'r') as file:
+with open(r".\calibration_data\voc_rad_eg.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         bandgap_v.append(float(row[0]))
@@ -104,4 +123,5 @@ with open("voc_rad_eg.csv", 'r') as file:
 vocradf = inter(bandgap_v, voc_rad)
 del bandgap_v
 del voc_rad
+
 
