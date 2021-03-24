@@ -39,14 +39,15 @@ def white_nonunif(imarr, center_row, center_col, diam):
     cal_arr = deepcopy(imarr)
     return cal_arr/ np.mean(pix_in_powermeter)
 
-def beam_correct(imarr, white_imarr_norm, ledv, rmin, rmax, cmin, cmax):
+def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cmax):
     cropped_white_norm = white_imarr_norm[rmin:rmax, cmin:cmax]
     cropped_raw_image = imarr[rmin:rmax, cmin:cmax]
+    cropped_ref_imarr = ref_imarr[rmin:rmax, cmin:cmax]
 
     overall_photon_flux = ledf(ledv)
     photon_flux_on_cell = np.mean(cropped_white_norm)*overall_photon_flux
 
-    return photon_flux_on_cell, (cropped_raw_image/cropped_white_norm)*np.mean(cropped_white_norm)
+    return photon_flux_on_cell, ((cropped_raw_image-cropped_ref_imarr)/cropped_white_norm)*np.mean(cropped_white_norm)
 
 
 white_buffer=[None, None, None, None]
