@@ -1,4 +1,5 @@
 from external_imports import *
+from shutil import copyfile
 
 def get_nominal_v(path):
     nominal_v = []
@@ -49,9 +50,19 @@ def white_over_cell_correction(white_exposure, led_specf, cell_specf,
 
     return white_factor/cell_factor
 
-def get_cam_exposure(path):
-    with open(path+'\\camera\\camera_setting_dump.txt') as file:
-        for line in file:
-            db = eval(line)
-            db = eval(line)
-            return float(db['ExposureTime'])
+def copy_led_sm_data(datapath, savepath):
+    
+    if os.path.isfile(f"{datapath}\\source_meter.csv"):
+        copyfile(f"{datapath}\\source_meter.csv", f"{savepath}\\source_meter.csv")
+
+    if os.path.isfile(f"{datapath}\\LED_power_supply.csv"):
+        copyfile(f"{datapath}\\LED_power_supply.csv", f"{savepath}\\LED_power_supply.csv")
+
+    if os.path.isfile(f"{datapath}\\camera\\camera_setting_dump.txt"):
+        copyfile(f"{datapath}\\camera\\camera_setting_dump.txt", f"{savepath}\\camera_setting_dump.txt")
+
+    if os.path.isfile(f"{datapath}\\camera\\exposure_list.csv"):
+        copyfile(f"{datapath}\\camera\\exposure_list.csv", f"{savepath}\\exposure_list.csv")
+
+
+
