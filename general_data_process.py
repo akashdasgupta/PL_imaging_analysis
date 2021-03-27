@@ -51,7 +51,7 @@ def white_over_cell_correction(white_exposure, led_specf, cell_specf,
     return white_factor/cell_factor
 
 def copy_led_sm_data(datapath, savepath):
-    
+
     if os.path.isfile(f"{datapath}\\source_meter.csv"):
         copyfile(f"{datapath}\\source_meter.csv", f"{savepath}\\source_meter.csv")
 
@@ -64,5 +64,18 @@ def copy_led_sm_data(datapath, savepath):
     if os.path.isfile(f"{datapath}\\camera\\exposure_list.csv"):
         copyfile(f"{datapath}\\camera\\exposure_list.csv", f"{savepath}\\exposure_list.csv")
 
+
+def open_wavelabs_data(filepath):
+    V = []
+    I = []
+    with open(filepath,'r') as file:
+        reader = csv.reader(file, delimiter='\t')
+        for row in reader:
+            try:
+                V.append(float(row[0]))
+                I.append(float(row[1]))
+            except:
+                pass
+    return np.array(V), np.array(I)
 
 
