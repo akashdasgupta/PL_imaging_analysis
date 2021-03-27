@@ -27,6 +27,16 @@ def find_tif(datapath):
         break
     return raw_paths
 
+def find_npy(datapath):
+    raw_paths = []
+    for _, _, files in os.walk(datapath):
+        for file in files:
+            if file.endswith(".npy"): # Only interested in np arrs
+                raw_paths.append(file)
+        break
+    return raw_paths
+
+
 def get_cam_exposure(path):
     with open(path+'\\camera\\camera_setting_dump.txt') as file:
         for line in file:
