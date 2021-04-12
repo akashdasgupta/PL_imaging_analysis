@@ -1,5 +1,6 @@
 from external_imports import *
 from image_process import *
+from joblib import Parallel, delayed
 
 def single_pixel_jv(path, row, col, flux_1sun, voc_rad, white_mean_scaled):
     # Lists to hold data
@@ -120,7 +121,7 @@ def array_jv(path, savepath, flux_1sun, voc_rad, white_mean_scaled):
         np.save(f"{savepath}\\V\\V{filename}", V)
 
 
-def jv_extrapolator(path):
+def jv_extrapolator(path, num_cores):
     if not os.path.isdir(f"{path}\\V_inter"):
         os.makedirs(f"{path}\\V_inter")
     files = find_npy(f"{path}\\V")
