@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 from scipy import constants as sci
 from scipy.interpolate import interp1d as inter
 import scipy.integrate as integrate
+import matplotlib.patches as patches
+import matplotlib.patheffects as PathEffects
 
 #######################################################################################
 # camera pixel to area at focal plane:
