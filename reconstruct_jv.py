@@ -95,8 +95,8 @@ def array_jv(path, savepath, flux_1sun, voc_rad, white_mean_scaled):
 
     if not os.path.isdir(f"{savepath}\\PLQE"):
         os.makedirs(f"{savepath}\\PLQE")
-    if not os.path.isdir(f"{savepath}\\QFLS"):
-        os.makedirs(f"{savepath}\\QFLS")
+    if not os.path.isdir(f"{savepath}\\V"):
+        os.makedirs(f"{savepath}\\V")
 
     for filename_voc in filenames_voc:
         # Asuming there is a sc file for every oc file, and it's saved by the same name format:
@@ -120,6 +120,39 @@ def array_jv(path, savepath, flux_1sun, voc_rad, white_mean_scaled):
         np.save(f"{savepath}\\V\\V{filename}", V)
 
 
+def jv_extrapolator(path):
+    if not os.path.isdir(f"{path}\\V_inter"):
+        os.makedirs(f"{path}\\V_inter")
+    files = find_npy(f"{path}\\V")
+    
+    arrmax, arrmin = (0, 10)
+    for file in files:
+        imarr = np.load(f"{path}\\V\\{file}")
+        if np.max(imarr) > arrmax:
+            arrmax = np.max(imarr)
+        if np.min(imarr) < arrmin:
+            arrmin = np.min(imarr)
+    vstep = (arrmax-arrmin)/100
+    vrange = np.arange(arrmin,arrmax+vstep,vstep)
+    
+    arr_shape = imarr.shape
+    arrays = np.zeros((len(vrange), arr_shape[0], arr_shape[1]))
+    
+    def single_pix(row,collength, path): 
+        for col in range(collength):
+            V = []
+            J = []
+            for file in files:
+                J.append(float(file.split('_')[1]))
+                vi = (np.load(f"{path}\\V\\{file}"))[row, col]
+                V.append(vi)
+            f = inter(V,J,bounds_error=False)
+            arrays[:,row,col] = f(vrange)
+    
+    Parallel(n_jobs=num_cores, backend='threading')(delayed(single_pix)(row, arr_shape[1], path) for row in range(arr_shape[0]))
+    
+    for i,v in enumerate(vrange):
+        np.save(f"{path}\\V_inter\\{v}", arrays[i,:,:])
 
 
 
