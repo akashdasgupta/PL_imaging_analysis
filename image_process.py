@@ -49,8 +49,7 @@ def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cma
 
     return photon_flux_on_cell, ((cropped_raw_image-cropped_ref_imarr)/cropped_white_norm)*np.mean(cropped_white_norm)
 
-def white_over_cell_correction(white_exposure, led_specf, cell_specf, 
-                          bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
+def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
     wavel_range =  np.arange(300, 1000, 1)
 
     led_spec = led_specf(wavel_range)
@@ -61,11 +60,43 @@ def white_over_cell_correction(white_exposure, led_specf, cell_specf,
     filter_OD = filterODf(wavel_range)
 
     white_factor =  integrate.simps((led_spec*cam_QE*lens_cal), wavel_range*1e-9) / integrate.simps(led_spec, wavel_range*1e-9)
-    white_factor *= white_exposure * white_reflectivity
+    white_factor *= white_reflectivity 
 
     cell_factor = integrate.simps((cell_spec*cam_QE*lens_cal*filter_OD), wavel_range*1e-9) / integrate.simps(cell_spec, wavel_range*1e-9)
 
     return white_factor/cell_factor
+
+
+def PLQEmap(filename, whitefilename, whiteparamsfile, correction, flux_1sun):
+    # Load the white params: 
+    white_exposure = None
+    white_flux = None
+
+    with open(whiteparamsfile,'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == 'Exposure':
+                white_exposure = float(row[1])
+            if row[0] == 'Flux scale':
+                white_flux = float(row[1])
+
+    if white_exposure == None or white_flux == None:
+        raise ValueError("Couldn't find white params!")
+    # load white
+    white_mean = np.mean(np.load(whitefilename)) / white_exposure
+
+    # Extract params from filename
+    bias = filename.split('_')[0]
+    if bias.lower() != 'oc' or  bias.lower() != 'sc':
+        bias = float(bias)
+    flux = float(filename.split('_')[1])
+    exposure = float(filename.split('_')[2])
+    num_sun = flux/flux_1sun
+
+    im_cell =  np.load(filename)/exposure
+    PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
+    return bias, num_sun, flux, PLQE
+
 
 white_buffer=[None, None, None, None]
 def callback_return_size(image_name, shape):
