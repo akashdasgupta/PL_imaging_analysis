@@ -67,7 +67,11 @@ def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf,
     return white_factor/cell_factor
 
 
-def PLQEmap(filename, whitefilename, whiteparamsfile, correction, flux_1sun):
+def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
+    # Flux at 1sun
+    if flux_1sun == 0:
+        flux_1sun = j1sunf(bandgap)
+
     # Load the white params: 
     white_exposure = None
     white_flux = None
@@ -82,6 +86,12 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, correction, flux_1sun):
 
     if white_exposure == None or white_flux == None:
         raise ValueError("Couldn't find white params!")
+
+    # calculate correction
+    correction = white_over_cell_correction(white_exposure, ledspecf, np.vectorize(BBf_cellf), 
+                                                bandgap, camqef, lenscalf, 0.99, filtcalf)
+
+
     # load white
     white_mean = np.mean(np.load(whitefilename)) / white_exposure
 
@@ -96,6 +106,17 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, correction, flux_1sun):
     im_cell =  np.load(filename)/exposure
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
+
+def save_PLQE(datapath, savepath, whitefilename, whiteparamsfile, bandgap, savename='untitled'):
+    if not os.path.isdir(f"{savepath}\\PLQE_{savename}"):
+        os.makedirs(f"{savepath}\\PLQE_{savename}")
+    filenames = find_npy(datapath)
+    for filename in filenames:
+        bias, num_sun, flux, PLQE =  PLQEmap(f"{datapath}\\{filename}", whitefilename, whiteparamsfile, bandgap)
+        savefilename = f"{bias}_{num_sun}_{flux}_"
+        np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}")
+
+
 
 
 white_buffer=[None, None, None, None]
