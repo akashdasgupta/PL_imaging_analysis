@@ -49,6 +49,23 @@ def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cma
 
     return photon_flux_on_cell, ((cropped_raw_image-cropped_ref_imarr)/cropped_white_norm)*np.mean(cropped_white_norm)
 
+def white_over_cell_correction(white_exposure, led_specf, cell_specf, 
+                          bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
+    wavel_range =  np.arange(300, 1000, 1)
+
+    led_spec = led_specf(wavel_range)
+    cell_spec = cell_specf(wavel_range, bandgap)
+
+    cam_QE = camQEf(wavel_range)
+    lens_cal = lenscalf(wavel_range)
+    filter_OD = filterODf(wavel_range)
+
+    white_factor =  integrate.simps((led_spec*cam_QE*lens_cal), wavel_range*1e-9) / integrate.simps(led_spec, wavel_range*1e-9)
+    white_factor *= white_exposure * white_reflectivity
+
+    cell_factor = integrate.simps((cell_spec*cam_QE*lens_cal*filter_OD), wavel_range*1e-9) / integrate.simps(cell_spec, wavel_range*1e-9)
+
+    return white_factor/cell_factor
 
 white_buffer=[None, None, None, None]
 def callback_return_size(image_name, shape):
