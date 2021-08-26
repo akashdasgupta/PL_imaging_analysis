@@ -39,7 +39,7 @@ def vsweep_col_eff(path, rawpath):
     # Figure out if we have enough points for a OC image from this dataset
     Vs = []
     Is = []
-    with open(f"{path}\\vsweep\\source_meter.csv", 'r') as file:
+    with open(f"{rawpath}\\vsweep\\source_meter.csv", 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             Vs.append(float(row[0]))
@@ -69,7 +69,7 @@ def vsweep_col_eff(path, rawpath):
     
     else:
         PLQE_oc = oc_image_maker(f"{path}\\oc",f"{path}\\vsweep")
-        if not oc_image_maker:
+        if not PLQE_oc:
             raise FileNotFoundError("Couldn't find enough files for OC image")
     
     for filename in filenames:
