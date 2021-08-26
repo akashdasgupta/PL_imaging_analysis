@@ -73,7 +73,7 @@ def average_recon_jv(path, voc_rad0):
     return QFLSs, Js, bias, flux, num_suns
 
 
-def ind_dep_QFLS(path, voc_rad0):
+def intsweep_QFLS(path, voc_rad0):
     PLQEs = []
     fluxes = []
     num_suns = []
