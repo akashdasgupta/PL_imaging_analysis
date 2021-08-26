@@ -54,6 +54,7 @@ def vsweep_col_eff(path, rawpath):
             I_above = Is[i-1]
             V_bellow = Vs[i]
             I_bellow = Is[i]
+            break
 
     if oc_extrapolate:
         filenames = find_npy(f"{path}\\PLQE_vsweep") 
@@ -79,59 +80,32 @@ def vsweep_col_eff(path, rawpath):
 
         PLQE_v =  np.load(f"{path}\\PLQE_vsweep\\{filename}")
         col_eff = (PLQE_oc-PLQE_v) / PLQE_oc
-        # save with voltages as the ID
         np.save(f"{path}\\vsweep_coleff\\{savename}", col_eff)
 
 
 def oc_image_maker(oc_path, vsweep_path):
-    vsweep_exposure = float(find_npy(vsweep_path)[0].split('_')[2])
-    vsweep_flux = float(find_npy(vsweep_path)[0].split('_')[1])
+    oc_filenames = find_npy(oc_path)
+    vsweep_filenames = find_npy(vsweep_path)
 
-    oc_flux_lists = []
-    oc_file_list = find_npy(oc_path)
-    for filename in oc_file_list:
-        oc_flux_lists.append(float(filename.split('_')[1]))
-        oc_flux_lists.sort()
-    #print(oc_flux_lists)
+    flux_vsweep = float(vsweep_filenames[0].split('_')[2])
+    oc_fluxes = [float(i.split('_')[2]) for i in oc_filenames]
+    oc_fluxes.sort()
+    if max(oc_fluxes) < flux_vsweep or min(oc_fluxes) > flux_vsweep:
+        return False
     
-    #im_voc = None
-    if oc_flux_lists[0] > vsweep_flux:
-        x = []
-        y = []
-        for i in range(2):
-            x.append(oc_flux_lists[i])
-            for temp_filename in oc_file_list:
-                if float(temp_filename.split('_')[1]) == oc_flux_lists[i]:
-                    y.append(np.load(f"{oc_path}\\{temp_filename}")/ float(temp_filename.split('_')[2]))
-        m = (y[0]-y[1])/ x[0]-x[1]
-        im_voc = m*(vsweep_flux-x[0])+y[0]
-
-
-    elif  oc_flux_lists[-1] < vsweep_flux:
-        x = []
-        y = []
-        for i in range(2):
-            x.append(oc_flux_lists[len(oc_flux_lists)-i-1])
-            for temp_filename in oc_file_list:
-                if float(temp_filename.split('_')[1]) == oc_flux_lists[len(oc_flux_lists)-i-1]:
-                    y.append(np.load(f"{oc_path}\\{temp_filename}")/ float(temp_filename.split('_')[2]))
-        
-        m = (y[0]-y[1])/ x[0]-x[1]
-        im_voc = m*(vsweep_flux-x[0])+y[0]
-
-    else:
-        for i, oc_flux in enumerate(oc_flux_lists):
-            if oc_flux>vsweep_flux:
-                break
-        for filename in find_npy(oc_path):
-            if float(filename.split('_')[1]) == oc_flux_lists[i]:
-                im_above = np.load(f"{oc_path}\\{filename}") / float(filename.split('_')[2])
-            elif float(filename.split('_')[1]) == oc_flux_lists[i-1]:
-                im_bellow = np.load(f"{oc_path}\\{filename}") / float(filename.split('_')[2])
-        im_voc = (im_above + im_bellow) / 2
+    sign0 = (oc_fluxes[0] - flux_vsweep) / abs(oc_fluxes[0] - flux_vsweep)
+    for i, filename in enumerate(oc_filenames):
+        flux = float(filename.split('_')[2])
+        if (flux - flux_vsweep) / abs(flux - flux_vsweep) != sign0:
+            oc_flux_above = flux
+            oc_flux_bellow = float(oc_filenames[i-1].split('_')[2])
+            oc_PLQE_above = oc_filenames[i]
+            oc_PLQE_bellow = oc_filenames[i-1]
     
-    im_voc *= vsweep_exposure
-    return im_voc
+    m_arr = (oc_PLQE_bellow-oc_PLQE_above)/(oc_flux_bellow-oc_flux_above)
+    c_arr = oc_flux_above - m_arr*oc_PLQE_above
+
+    return (m_arr * flux_vsweep) + c_arr
 
 def int_col_eff(path, savepath, flux_1sun):
     
