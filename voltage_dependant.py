@@ -33,54 +33,55 @@ def vsweep_array_QFLS(path, voc_rad0):
 
 
 def vsweep_col_eff(path, rawpath):
-    if not os.path.isdir(f"{path}\\vsweep_coleff"):
-        os.makedirs(f"{path}\\vsweep_coleff")
-    
-    # Figure out if we have enough points for a OC image from this dataset
-    Vs = []
-    Is = []
-    with open(f"{rawpath}\\vsweep\\source_meter.csv", 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            Vs.append(float(row[0]))
-            Is.append(float(row[1]))
-    
-    sign0 = Is[0]/abs[Is[0]]
-    oc_extrapolate = False
-    for i in Is:
-        if i/ abs(i) != sign0:
-            oc_extrapolate = True
-            V_above = Vs[i-1]
-            I_above = Is[i-1]
-            V_bellow = Vs[i]
-            I_bellow = Is[i]
-            break
-
-    if oc_extrapolate:
-        filenames = find_npy(f"{path}\\PLQE_vsweep") 
-        for filename in filenames:
-            if float(filename.split('_')[0].split('=')[1]) == np.around(V_above,3):
-                PLQE_oc_above = np.load(f"{path}\\PLQE_vsweep\\{filename}")
-            elif float(filename.split('_')[0].split('=')[1]) == np.around(V_bellow, 3):
-                PLQE_oc_bellow = np.load(f"{path}\\PLQE_vsweep\\{filename}")
+    for direction in ["vsweep_f", "vsweep_b", "vsweep"]:
+        if not os.path.isdir(f"{path}\\{direction}_coleff"):
+            os.makedirs(f"{path}\\{direction}_coleff")
         
-            m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (I_bellow-I_above)
-            PLQE_oc = m_ocarr*I_bellow  # I=0, so oc image = c
-    
-    else:
-        PLQE_oc = oc_image_maker(f"{path}\\oc",f"{path}\\vsweep")
-        if not PLQE_oc:
-            raise FileNotFoundError("Couldn't find enough files for OC image")
-    
-    for filename in filenames:
-        bias = float(filename.split('_')[0].split('=')[1])
-        num_sun = float(filename.split('_')[1])
-        flux = float(filename.split('_')[2])
-        savename = f"{bias}_{num_sun}_{flux}_"
+        # Figure out if we have enough points for a OC image from this dataset
+        Vs = []
+        Is = []
+        with open(f"{rawpath}\\{direction}\\source_meter.csv", 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                Vs.append(float(row[0]))
+                Is.append(float(row[1]))
+        
+        sign0 = Is[0]/abs[Is[0]]
+        oc_extrapolate = False
+        for i in Is:
+            if i/ abs(i) != sign0:
+                oc_extrapolate = True
+                V_above = Vs[i-1]
+                I_above = Is[i-1]
+                V_bellow = Vs[i]
+                I_bellow = Is[i]
+                break
 
-        PLQE_v =  np.load(f"{path}\\PLQE_vsweep\\{filename}")
-        col_eff = (PLQE_oc-PLQE_v) / PLQE_oc
-        np.save(f"{path}\\vsweep_coleff\\{savename}", col_eff)
+        if oc_extrapolate:
+            filenames = find_npy(f"{path}\\PLQE_{direction}") 
+            for filename in filenames:
+                if float(filename.split('_')[0].split('=')[1]) == np.around(V_above,3):
+                    PLQE_oc_above = np.load(f"{path}\\PLQE_{direction}\\{filename}")
+                elif float(filename.split('_')[0].split('=')[1]) == np.around(V_bellow, 3):
+                    PLQE_oc_bellow = np.load(f"{path}\\PLQE_{direction}\\{filename}")
+            
+                m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (I_bellow-I_above)
+                PLQE_oc = m_ocarr*I_bellow  # I=0, so oc image = c
+        
+        else:
+            PLQE_oc = oc_image_maker(f"{path}\\PLQE_oc",f"{path}\\{direction}")
+            if not PLQE_oc:
+                raise FileNotFoundError("Couldn't find enough files for OC image")
+        
+        for filename in filenames:
+            bias = float(filename.split('_')[0].split('=')[1])
+            num_sun = float(filename.split('_')[1])
+            flux = float(filename.split('_')[2])
+            savename = f"{bias}_{num_sun}_{flux}_"
+
+            PLQE_v =  np.load(f"{path}\\PLQE_{direction}\\{filename}")
+            col_eff = (PLQE_oc-PLQE_v) / PLQE_oc
+            np.save(f"{path}\\{direction}_coleff\\{savename}", col_eff)
 
 
 def oc_image_maker(oc_path, vsweep_path):
