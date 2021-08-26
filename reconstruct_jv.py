@@ -2,7 +2,7 @@ from external_imports import *
 from image_process import *
 from joblib import Parallel, delayed
 
-def single_pixel_jv(path, row, col, voc_rad):
+def single_pix_recon_jv(path, row, col, voc_rad):
     # Lists to hold data
     PLQEs = []
     fluxes = []
@@ -36,45 +36,37 @@ def single_pixel_jv(path, row, col, voc_rad):
     return QFLSs, Js, bias, flux, num_suns
 
 
-def whole_image_jv(path, flux_1sun, voc_rad, white_mean_scaled):
+def average_recon_jv(path, voc_rad):
     # Lists to hold data
-    dp_oc = []
-    # dp_sc = []
-    white_refs = []
+    PLQEs = []
     fluxes = []
+    num_suns = []
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad/(sci.k*298))-1
-        
-    filenames_voc = find_npy(f"{path}\\oc")    
+    filenames = find_npy(f"{path}\\PLQE_oc") 
 
-
-    for filename_voc in filenames_voc:
-        # Asuming there is a sc file for every oc file, and it's saved by the same name format:
-        # filename_isc = 'SC_'+'_'.join(filename_voc.split('_')[1:])
-        flux = float(filename_voc.split('_')[1])
-        exposure = float(filename_voc.split('_')[2])
+    for filename in filenames:
+        # Get the parameters
+        num_sun = float(filename.split('_')[1])
+        num_suns.append(num_sun)
+        flux = float(filename.split('_')[2])
         fluxes.append(flux)
 
-        datapoint_voc =  np.mean(np.load(f"{path}\\oc\\{filename_voc}"))
-        # datapoint_isc =  np.mean(np.load(f"{path}\\sc\\{filename_isc}"))
-        
-        dp_oc.append(datapoint_voc/exposure)
-        # dp_sc.append(datapoint_isc/exposure)
-        white_refs.append(white_mean_scaled*flux)
+        ave_rad = 3 # Good idea to average over a bunch of pixels
+        PLQE =  np.mean(np.load(f"{path}\\PLQE_oc\\{filename}"))
+        PLQEs.append(PLQE)
 
-    dp_oc = np.array(dp_oc)
-    # dp_sc = np.array(dp_sc)
-    white_refs = np.array(white_refs)
-    
-    # Calculate number of suns:
-    num_suns = np.array(fluxes) / flux_1sun
+   
+    bias = filename.split('_')[0] # Assuming constant bias at all points
+    PLQEs = np.array(PLQEs)
+
+    # calculate voc_rad intensity dependant
     voc_rads = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_suns)+1)
 
-    rrs = (dp_oc)/(white_refs)
-    Vs =  voc_rads +  (sci.k*298/sci.e)*np.log(rrs)
+    QFLSs =  voc_rads +  (sci.k*298/sci.e)*np.log(PLQEs)
     Js = (1-num_suns)
     
-    return num_suns, rrs, Vs, Js, fluxes
+    return QFLSs, Js, bias, flux, num_suns
 
 
 def array_jv(path, savepath, flux_1sun, voc_rad, white_mean_scaled):
