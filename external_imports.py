@@ -126,4 +126,10 @@ vocradf = inter(bandgap_v, voc_rad)
 del bandgap_v
 del voc_rad
 
+#######################################################################################
+# Area for 1 device (dark area on solar sim)
+with open(r".\calibration_data\device_area.csv", 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        device_area = float(row[1])
 
