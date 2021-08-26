@@ -5,34 +5,27 @@ from joblib import Parallel, delayed
 import multiprocessing
 num_cores = multiprocessing.cpu_count()
 
-
-def vsweep_array_QFLS(path, savepath, voc_rad, white_mean_scaled, flux_1sun):
+def vsweep_array_QFLS(path, voc_rad0):
     # For Voc_rad calculatuion:
-    jsc_by_j0 = np.exp(sci.e*voc_rad/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\vsweep") 
+    jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
+    filenames = find_npy(f"{path}\\PLQE_vsweep") 
 
-    if not os.path.isdir(f"{savepath}\\QFLS_vsweep"):
-        os.makedirs(f"{savepath}\\QFLS_vsweep")
+    if not os.path.isdir(f"{path}\\QFLS_vsweep"):
+        os.makedirs(f"{path}\\QFLS_vsweep")
 
     for filename in filenames:
         # Asuming there is a sc file for every oc file, and it's saved by the same name format:
+        bias = float(filename.split('_')[0]) # should work for vsweep stuff
         flux = float(filename.split('_')[1])
-        num_sun = flux / flux_1sun
-        exposure = float(filename.split('_')[2])
-        volt = filename.split('_')[0]
+        num_sun = float(filename.split('_')[1])
 
-        im =  np.load(f"{path}\\vsweep\\{filename}")/exposure  
-        im_volt = float(filename.split('_')[0].split('=')[1])
-        white_ref = white_mean_scaled*flux 
-        
+        PLQE =  np.load(f"{path}\\PLQE_vsweep\\{filename}")
         voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
 
-        rr = (im)/(white_ref)
-        V =  voc_rad +  (sci.k*298/sci.e)*np.log(rr)
+        QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
         # convention: [num suns]_[J]_[flux]_.npy
-        filename = f"{num_sun}_{flux}_"
-
-        np.save(f"{savepath}\\QFLS_vsweep\\V{im_volt}_{filename}", V)
+        savename = f"{bias}_{num_sun}_{flux}_"
+        np.save(f"{path}\\QFLS_vsweep\\{savename}", QFLS)
 
 def vsweep_curr_map(path, savepath, cell_area=0.3087):
     if not os.path.isdir(f"{savepath}\\vsweep_currmaps"):
