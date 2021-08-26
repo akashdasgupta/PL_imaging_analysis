@@ -1,6 +1,9 @@
 from external_imports import *
 from image_process import *
-from multiprocessing.pool import ThreadPool
+from joblib import Parallel, delayed
+import multiprocessing
+num_cores = multiprocessing.cpu_count()
+from scipy import stats
 
 def single_pix_recon_jv(path, row, col, voc_rad0):
     # Lists to hold data
@@ -173,8 +176,6 @@ def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
         writer.writerows([['Voltage measured at oc (V)', Voc],
                           ['Current measured at sc (mAcm^-2)', Jsc]]) 
 
-
-    
 def intsweep_coleff(path):
     if not os.path.isdir(f"{path}\\pseudo_col_eff"):
         os.makedirs(f"{path}\\pseudo_col_eff")
@@ -194,3 +195,31 @@ def intsweep_coleff(path):
         psudo_col_eff = (oc_image-sc_image)/oc_image
         
         np.save(f"{path}\\pseudo_col_eff\\{savename}",psudo_col_eff)
+
+def get_idelity_map(path):
+    filenames = find_npy(f"{path}\\PLQE_oc")
+    num_suns = np.array([float(i.split('_')[1]) for i in filenames])
+    ln_curr =  np.log(num_suns)
+    QFLS_arrs = [np.load(filename) for filename in filenames]
+
+    n_id = np.zeros(QFLS_arrs[0].shape)
+    def process_row(i):
+        for j in range(QFLS_arrs[0].shape[1]):
+            QFLS_pp = []
+            for QFLS_arr in QFLS_arrs:
+                QFLS_pp.append(QFLS_arr[i,j])
+            
+            QFLS_pp = [x for _,x in sorted(zip(ln_curr,QFLS_pp))]
+            ln_curr.sort()
+            for kp in range(len(QFLS_arrs)-2):
+                k=kp+1
+                m,c = stats.linregress(ln_curr[0:k], QFLS_pp[0:k])[0:2]
+                grad_vec = np.array([ln_curr[k+1]-ln_curr[k+1], QFLS_pp[k] +  m*(ln_curr[k+1]-ln_curr[k+1])])
+                next_vector = np.array([ln_curr[k+1]-ln_curr[k+1], QFLS_pp[k+1]])
+                dp = np.dot(grad_vec,next_vector)
+                theta = np.arccos(dp/(np.sqrt(np.dot(grad_vec,grad_vec))*np.sqrt(np.dot(next_vector,next_vector))))
+                if theta * 180/np.pi >= 2.5:
+                    break
+            n_id[i,j] = sci.e*m/(sci.k*293)
+    Parallel(n_jobs=num_cores, backend='threading')(delayed(process_row)(row) for row in range(QFLS_arrs[0].shape[1]))
+    return n_id
