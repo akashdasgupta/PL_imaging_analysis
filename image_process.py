@@ -40,6 +40,9 @@ def white_nonunif(imarr, center_row, center_col, diam):
     return cal_arr/ np.mean(pix_in_powermeter)
 
 def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cmax):
+    """
+    Corrects for effect of beam nonuniformity in the raw counts image
+    """
     cropped_white_norm = white_imarr_norm[rmin:rmax, cmin:cmax]
     cropped_raw_image = imarr[rmin:rmax, cmin:cmax]
     cropped_ref_imarr = ref_imarr[rmin:rmax, cmin:cmax]
@@ -91,18 +94,18 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
     correction = white_over_cell_correction(white_exposure, ledspecf, np.vectorize(BBf_cellf), 
                                                 bandgap, camqef, lenscalf, 0.99, filtcalf)
 
-
     # load white
     white_mean = np.mean(np.load(whitefilename)) / white_exposure
 
     # Extract params from filename
     bias = filename.split('_')[0]
     if bias.lower() != 'oc' or  bias.lower() != 'sc':
-        bias = float(bias)
+        bias = float(bias.split('=')[1])
     flux = float(filename.split('_')[1])
     exposure = float(filename.split('_')[2])
     num_sun = flux/flux_1sun
 
+    # Main calculation
     im_cell =  np.load(filename)/exposure
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
@@ -115,8 +118,6 @@ def save_PLQE(datapath, savepath, whitefilename, whiteparamsfile, bandgap, saven
         bias, num_sun, flux, PLQE =  PLQEmap(f"{datapath}\\{filename}", whitefilename, whiteparamsfile, bandgap)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}")
-
-
 
 
 white_buffer=[None, None, None, None]
