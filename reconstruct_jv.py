@@ -1,6 +1,6 @@
 from external_imports import *
 from image_process import *
-from joblib import Parallel, delayed
+from multiprocessing.pool import ThreadPool
 
 def single_pix_recon_jv(path, row, col, voc_rad0):
     # Lists to hold data
@@ -108,35 +108,75 @@ def array_jv(path, voc_rad0):
     Js = 1- num_suns
     return QFLSs, Js, flux, num_suns
 
-def oc_sc_1sun(path, flux_1sun):
+def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
+    for i in ['oc', 'sc']:
+        if not os.path.isdir(f"{path}\\PLQE_oc_sc_1sun\\{i}"):
+            os.makedirs(f"{path}\\PLQE_oc_sc_1sun\\{i}")
+
     # For Voc_rad calculatuion:
-    filenames_voc = find_npy(f"{path}\\oc") 
-    
-    for i, filename_voc in enumerate(filenames_voc):
-        if i == len(filenames_voc):
-            continue
-        # Asuming there is a sc file for every oc file, and it's saved by the same name format:
-        flux = float(filename_voc.split('_')[1])
-        nextflux =  float(filenames_voc[i+1].split('_')[1])
-        if (flux-flux_1sun)/abs(flux-flux_1sun) != (nextflux-flux_1sun)/abs(nextflux-flux_1sun):
-            im_oc_before = np.load(f"{path}\\oc\\{filename_voc}")/float(filename_voc.split('_')[2])
-            im_sc_before = np.load(f"{path}\\sc\\{'SC'+'_'.join(filename_voc.split('_')[1:])}")/float(filename_voc.split('_')[2])
-           
-            white_ref = white_mean_scaled*flux 
-            PLQE_oc_before = (im_oc_before)/(white_ref)
-            PLQE_sc_before = (im_sc_before)/(white_ref)
-            
-            im_after  = np.load(filenames_voc[i+1])/float(filenames_voc[i+1].split('_')[2])
-            im_after  = np.load(filenames_voc[i+1])/float(filenames_voc[i+1].split('_')[2])
+    filenames_oc = find_npy(f"{path}\\PLQE_oc") 
+    fluxes = []
+    for filename_oc in filenames_oc:
+        flux = float(filename_oc.split('_')[2])
+        fluxes.append(flux)
+    fluxes.sort() # To make sure it's in some proper order
+
+    sign_at_start = (fluxes[0] - flux_1sun)/abs(fluxes[0] - flux_1sun)
+    for i, flux in enumerate(fluxes):
+        if (flux - flux_1sun)/abs(flux - flux_1sun) != sign_at_start:
+            flux_above = flux
+            flux_bellow = fluxes[i-1]
+            flux_above_index = i
             break
-            
 
-    V =  voc_rad +  (sci.k*298/sci.e)*np.log(rr)
-    # convention: [num suns]_[J]_[flux]_.npy
-    filename = f"{num_sun}_{1-num_sun}_{flux}_"
+    for filename_oc in filenames_oc:
+        filename_sc = '_'.join(['SC']+filename_oc.split('_')[1:])
+        flux = float(filename_oc.split('_')[2])
+        if flux == flux_above:
+            PLQE_oc_above = np.load(f"{path}\\PLQE_oc\\{filename_oc}")
+            PLQE_sc_above = np.load(f"{path}\\PLQE_sc\\{filename_sc}")
+        elif flux == flux_bellow:
+            PLQE_oc_bellow = np.load(f"{path}\\PLQE_oc\\{filename_oc}")
+            PLQE_sc_bellow = np.load(f"{path}\\PLQE_sc\\{filename_sc}")
+    
+    # oc array interpolate:
+    m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (flux_bellow-flux_above)
+    c_ocarr = PLQE_oc_bellow - m_ocarr*flux_bellow
+    oc_1sun = m_ocarr*flux_1sun + c_ocarr
+    np.save(f"{path}\\PLQE_oc_sc_1sun\\oc\\OC_1_{flux_1sun}", oc_1sun)
+    # sc array interpolate:
+    m_scarr = (PLQE_sc_bellow - PLQE_sc_above)/ (flux_bellow-flux_above)
+    c_scarr = PLQE_sc_bellow - m_scarr*flux_bellow
+    sc_1sun = m_scarr*flux_1sun + c_scarr
+    np.save(f"{path}\\PLQE_oc_sc_1sun\\sc\\SC_1_{flux_1sun}", sc_1sun)
 
-    np.save(f"{savepath}\\PLQE\\PLQE_{filename}", rr)
-    np.save(f"{savepath}\\V\\V{filename}", V)
+    ####### get the sm stuff##########
+    # OC
+    vlist_temp = []
+    jlist_temp = [] 
+    with open(f"{path}\\PLQE_oc\\source_meter.csv" 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            vlist_temp.append(float(row[0]))
+    Voc = inter([flux_above, flux_bellow], 
+                [sorted(vlist_temp)[flux_above_index], sorted(vlist_temp)[flux_above_index-1]])(flux_1sun)
+    with open(f"{path}\\PLQE_sc\\source_meter.csv" 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            jlist_temp.append(float(row[0]) * (1e3/device_area))
+    Jsc = inter([flux_above, flux_bellow], 
+                [sorted(jlist_temp)[flux_above_index], sorted(jlist_temp)[flux_above_index-1]])(flux_1sun)
+    
+    with open(f"{path}\\PLQE_oc_sc_1sun\\JV",'w') as file:
+        writer = csv.writer()
+        writer.writerows([['Voltage measured at oc (V)', Voc],
+                          ['Current measured at sc (mAcm^-2)', Jsc]]) 
+
+
+    
+
+        
+
 
 
 
