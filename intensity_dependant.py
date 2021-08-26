@@ -197,7 +197,7 @@ def intsweep_coleff(path):
         np.save(f"{path}\\pseudo_col_eff\\{savename}",psudo_col_eff)
 
 def get_idelity_map(path):
-    filenames = find_npy(f"{path}\\PLQE_oc")
+    filenames = find_npy(f"{path}\\QFLS_int_oc")
     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
     ln_curr =  np.log(num_suns)
     QFLS_arrs = [np.load(filename) for filename in filenames]
