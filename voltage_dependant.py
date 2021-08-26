@@ -8,92 +8,79 @@ num_cores = multiprocessing.cpu_count()
 def vsweep_array_QFLS(path, voc_rad0):
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\PLQE_vsweep") 
-
-    if not os.path.isdir(f"{path}\\QFLS_vsweep"):
-        os.makedirs(f"{path}\\QFLS_vsweep")
-
-    for filename in filenames:
-        # Asuming there is a sc file for every oc file, and it's saved by the same name format:
-        bias = float(filename.split('_')[0]) # should work for vsweep stuff
-        flux = float(filename.split('_')[1])
-        num_sun = float(filename.split('_')[1])
-
-        PLQE =  np.load(f"{path}\\PLQE_vsweep\\{filename}")
-        voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
-
-        QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
-        # convention: [num suns]_[J]_[flux]_.npy
-        savename = f"{bias}_{num_sun}_{flux}_"
-        np.save(f"{path}\\QFLS_vsweep\\{savename}", QFLS)
-
-def vsweep_curr_map(path, savepath, cell_area=0.3087):
-    if not os.path.isdir(f"{savepath}\\vsweep_currmaps"):
-        os.makedirs(f"{savepath}\\vsweep_currmaps")
     
-    # Lists to hold data
+    for direction in ["vsweep_f", "vsweep_b", "vsweep"]:
+        if os.path.isdir(f"{path}\\PLQE_{direction}"):
+
+            filenames = find_npy(f"{path}\\PLQE_{direction}") 
+
+            if not os.path.isdir(f"{path}\\QFLS_{direction}"):
+                os.makedirs(f"{path}\\QFLS_{direction}")
+
+            for filename in filenames:
+                # Asuming there is a sc file for every oc file, and it's saved by the same name format:
+                bias = float(filename.split('_')[0]) # should work for vsweep stuff
+                flux = float(filename.split('_')[1])
+                num_sun = float(filename.split('_')[1])
+
+                PLQE =  np.load(f"{path}\\PLQE_{direction}\\{filename}")
+                voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
+
+                QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
+                # convention: [num suns]_[J]_[flux]_.npy
+                savename = f"{bias}_{num_sun}_{flux}_"
+                np.save(f"{path}\\QFLS_{direction}\\{savename}", QFLS)
+
+
+def vsweep_col_eff(path, rawpath):
+    if not os.path.isdir(f"{path}\\vsweep_coleff"):
+        os.makedirs(f"{path}\\vsweep_coleff")
+    
+    # Figure out if we have enough points for a OC image from this dataset
     Vs = []
-    Js = []
+    Is = []
     with open(f"{path}\\vsweep\\source_meter.csv", 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             Vs.append(float(row[0]))
-            Js.append(float(row[1])*1000/cell_area)
+            Is.append(float(row[1]))
     
-    filenames = find_npy(f"{path}\\vsweep") 
+    sign0 = Is[0]/abs[Is[0]]
+    oc_extrapolate = False
+    for i in Is:
+        if i/ abs(i) != sign0:
+            oc_extrapolate = True
+            V_above = Vs[i-1]
+            I_above = Is[i-1]
+            V_bellow = Vs[i]
+            I_bellow = Is[i]
 
-    if np.min(Js) <= 0 :
-        sign = Js[0]/abs(Js[0])
-        for i in range(len(Js)):
-            if Js[i]/abs(Js[i]) != sign:
-                oc_voltage_above = np.around(Vs[i], 3)
-                J_above =  Js[i]
-                oc_voltage_bellow = np.around(Vs[i-1], 3)
-                J_bellow = Js[i-1]
-                break
+    if oc_extrapolate:
+        filenames = find_npy(f"{path}\\PLQE_vsweep") 
         for filename in filenames:
-            if float(filename.split('_')[0].split('=')[1]) == oc_voltage_above:
-                filename_above = filename
-            elif float(filename.split('_')[0].split('=')[1]) == oc_voltage_bellow:
-                filename_bellow = filename
-            
+            if float(filename.split('_')[0].split('=')[1]) == np.around(V_above,3):
+                PLQE_oc_above = np.load(f"{path}\\PLQE_vsweep\\{filename}")
+            elif float(filename.split('_')[0].split('=')[1]) == np.around(V_bellow, 3):
+                PLQE_oc_bellow = np.load(f"{path}\\PLQE_vsweep\\{filename}")
         
-        imarr2 = np.load(f"{path}\\vsweep\\{filename_bellow}") 
-        imarr1 = np.load(f"{path}\\vsweep\\{filename_above}")
-        oc_imarr = imarr1 - ((imarr2-imarr1)/(J_bellow-J_above))*J_above
-    # elif Js[-1] <= 0:
-    #     for i in range(len(Js)):
-    #         if Js[len(Js)-1-i]>=0:
-    #             oc_voltage_above = np.around(Vs[len(Js)-1-i], 3)
-    #             oc_voltage_bellow = np.around(Vs[len(Js)-i], 3)
-    #             break
-    #     for filename in filenames:
-    #         if float(filename.split('_')[0].split('=')[1]) == oc_voltage_above:
-    #             filename_above = filename
-    #         elif float(filename.split('_')[0].split('=')[1]) == oc_voltage_bellow:
-    #             filename_bellow = filename
-        
-    #     oc_imarr = (np.load(f"{path}\\vsweep\\{filename_above}") + np.load(f"{path}\\vsweep\\{filename_bellow}"))/2
+            m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (I_bellow-I_above)
+            PLQE_oc = m_ocarr*I_bellow  # I=0, so oc image = c
     
     else:
-        oc_imarr = oc_image_maker(f"{path}\\oc",f"{path}\\vsweep")
-    #oc_imarr = oc_image_maker(f"{path}\\oc",f"{path}\\vsweep")
-    im_volts_sorted = []
+        PLQE_oc = oc_image_maker(f"{path}\\oc",f"{path}\\vsweep")
+        if not oc_image_maker:
+            raise FileNotFoundError("Couldn't find enough files for OC image")
+    
     for filename in filenames:
-        im_volts_sorted.append(float(filename.split('_')[0].split('=')[1]))
-    im_volts_sorted.sort()
+        bias = float(filename.split('_')[0].split('=')[1])
+        num_sun = float(filename.split('_')[1])
+        flux = float(filename.split('_')[2])
+        savename = f"{bias}_{num_sun}_{flux}_"
 
-    for filename in filenames:
-        im =  np.load(f"{path}\\vsweep\\{filename}")
-        im_volt = float(filename.split('_')[0].split('=')[1])
-        im_curr = Js[-im_volts_sorted.index(im_volt)]
-
-        curr_map = (oc_imarr-im) / oc_imarr
+        PLQE_v =  np.load(f"{path}\\PLQE_vsweep\\{filename}")
+        col_eff = (PLQE_oc-PLQE_v) / PLQE_oc
         # save with voltages as the ID
-        np.save(f"{savepath}\\vsweep_currmaps\\{im_volt}", curr_map)
-
-
-    return Vs, Js
+        np.save(f"{path}\\vsweep_coleff\\{savename}", col_eff)
 
 
 def oc_image_maker(oc_path, vsweep_path):
