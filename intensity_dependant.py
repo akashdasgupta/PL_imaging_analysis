@@ -130,7 +130,7 @@ def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
             break
 
     for filename_oc in filenames_oc:
-        filename_sc = '_'.join(['SC']+filename_oc.split('_')[1:])
+        filename_sc = 'SC_' + '_'.join(filename_oc.split('_')[1:])
         flux = float(filename_oc.split('_')[2])
         if flux == flux_above:
             PLQE_oc_above = np.load(f"{path}\\PLQE_oc\\{filename_oc}")
@@ -143,6 +143,7 @@ def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
     m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (flux_bellow-flux_above)
     c_ocarr = PLQE_oc_bellow - m_ocarr*flux_bellow
     oc_1sun = m_ocarr*flux_1sun + c_ocarr
+
     np.save(f"{path}\\PLQE_oc_sc_1sun\\oc\\OC_1_{flux_1sun}", oc_1sun)
     # sc array interpolate:
     m_scarr = (PLQE_sc_bellow - PLQE_sc_above)/ (flux_bellow-flux_above)
@@ -174,42 +175,22 @@ def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
 
 
     
-
+def intsweep_coleff(path):
+    if not os.path.isdir(f"{path}\\pseudo_col_eff"):
+        os.makedirs(f"{path}\\pseudo_col_eff")
+    
+    oc_filenames = find_npy(f"{path}\\PLQE_oc")   
+    for oc_filename in oc_filenames:
+        sc_filename = 'SC_' + '_'.join(oc_filename.split('_')[1:])
         
+        num_suns = float(oc_filename.split('_')[1])
+        flux = float(oc_filename.split('_')[2])
+        
+        savename = f"NA_{num_suns}_{flux}_"
 
-
-
-
-# def jv_extrapolator(path, num_cores):
-#     if not os.path.isdir(f"{path}\\V_inter"):
-#         os.makedirs(f"{path}\\V_inter")
-#     files = find_npy(f"{path}\\V")
-    
-#     arrmax, arrmin = (0, 10)
-#     for file in files:
-#         imarr = np.load(f"{path}\\V\\{file}")
-#         if np.max(imarr) > arrmax:
-#             arrmax = np.max(imarr)
-#         if np.min(imarr) < arrmin:
-#             arrmin = np.min(imarr)
-#     vstep = (arrmax-arrmin)/100
-#     vrange = np.arange(arrmin,arrmax+vstep,vstep)
-    
-#     arr_shape = imarr.shape
-#     arrays = np.zeros((len(vrange), arr_shape[0], arr_shape[1]))
-    
-#     def single_pix(row,collength, path): 
-#         for col in range(collength):
-#             V = []
-#             J = []
-#             for file in files:
-#                 J.append(float(file.split('_')[1]))
-#                 vi = (np.load(f"{path}\\V\\{file}"))[row, col]
-#                 V.append(vi)
-#             f = inter(V,J,bounds_error=False)
-#             arrays[:,row,col] = f(vrange)
-    
-#     Parallel(n_jobs=num_cores, backend='threading')(delayed(single_pix)(row, arr_shape[1], path) for row in range(arr_shape[0]))
-    
-#     for i,v in enumerate(vrange):
-#         np.save(f"{path}\\V_inter\\{v}", arrays[i,:,:])
+        #print(f"{oc_path}\\{oc_file}")
+        oc_image = np.load(f"{path}\\PLQE_oc\\{oc_filename}")
+        sc_image = np.load(f"{path}\\PLQE_sc\\{sc_filename}")
+        psudo_col_eff = (oc_image-sc_image)/oc_image
+        
+        np.save(f"{path}\\pseudo_col_eff\\{savename}",psudo_col_eff)

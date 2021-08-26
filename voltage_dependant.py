@@ -107,30 +107,5 @@ def oc_image_maker(oc_path, vsweep_path):
 
     return (m_arr * flux_vsweep) + c_arr
 
-def int_col_eff(path, savepath, flux_1sun):
-    
-    if not os.path.isdir(f"{savepath}\\pseudo_col_eff"):
-        os.makedirs(f"{savepath}\\pseudo_col_eff")
-    
-    oc_path = f"{path}\\oc"
-    sc_path = f"{path}\\sc"
-    
-    for _,_,files in os.walk(oc_path):
-        for oc_file in files:
-            #print(files)
-            if oc_file.endswith('.npy'):
-                sc_file = 'SC_' + '_'.join(oc_file.split('_')[1:])
-                
-                flux = float(oc_file.split('_')[1])
-                num_sun = flux/flux_1sun
-                filename = f"coleff_{num_sun}_{1-num_sun}_{flux}_"
-
-                #print(f"{oc_path}\\{oc_file}")
-                oc_image = np.load(f"{oc_path}\\{oc_file}")
-                sc_image = np.load(f"{sc_path}\\{sc_file}")
-                psudo_col_eff = (oc_image-sc_image)/oc_image
-                
-                
-                np.save(f"{savepath}\\pseudo_col_eff\\{filename}",psudo_col_eff)
 
 
