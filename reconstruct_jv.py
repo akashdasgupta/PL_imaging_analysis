@@ -2,13 +2,13 @@ from external_imports import *
 from image_process import *
 from joblib import Parallel, delayed
 
-def single_pix_recon_jv(path, row, col, voc_rad):
+def single_pix_recon_jv(path, row, col, voc_rad0):
     # Lists to hold data
     PLQEs = []
     fluxes = []
     num_suns = []
     # For Voc_rad calculatuion:
-    jsc_by_j0 = np.exp(sci.e*voc_rad/(sci.k*298))-1
+    jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
     filenames = find_npy(f"{path}\\PLQE_oc") 
 
     for filename in filenames:
@@ -26,6 +26,8 @@ def single_pix_recon_jv(path, row, col, voc_rad):
    
     bias = filename.split('_')[0] # Assuming constant bias at all points
     PLQEs = np.array(PLQEs)
+    fluxes = np.array(fluxes)
+    num_suns = np.array(num_suns)
 
     # calculate voc_rad intensity dependant
     voc_rads = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_suns)+1)
@@ -36,13 +38,13 @@ def single_pix_recon_jv(path, row, col, voc_rad):
     return QFLSs, Js, bias, flux, num_suns
 
 
-def average_recon_jv(path, voc_rad):
+def average_recon_jv(path, voc_rad0):
     # Lists to hold data
     PLQEs = []
     fluxes = []
     num_suns = []
     # For Voc_rad calculatuion:
-    jsc_by_j0 = np.exp(sci.e*voc_rad/(sci.k*298))-1
+    jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
     filenames = find_npy(f"{path}\\PLQE_oc") 
 
     for filename in filenames:
@@ -59,6 +61,8 @@ def average_recon_jv(path, voc_rad):
    
     bias = filename.split('_')[0] # Assuming constant bias at all points
     PLQEs = np.array(PLQEs)
+    fluxes = np.array(fluxes)
+    num_suns = np.array(num_suns)
 
     # calculate voc_rad intensity dependant
     voc_rads = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_suns)+1)
@@ -69,43 +73,45 @@ def average_recon_jv(path, voc_rad):
     return QFLSs, Js, bias, flux, num_suns
 
 
-def array_jv(path, savepath, flux_1sun, voc_rad, white_mean_scaled):
+def array_jv(path, voc_rad0):
+    PLQEs = []
+    fluxes = []
+    num_suns = []
     # For Voc_rad calculatuion:
-    jsc_by_j0 = np.exp(sci.e*voc_rad/(sci.k*298))-1
-        
-    filenames_voc = find_npy(f"{path}\\oc") 
+    jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
+    filenames = find_npy(f"{path}\\PLQE_oc") 
 
-    if not os.path.isdir(f"{savepath}\\PLQE"):
-        os.makedirs(f"{savepath}\\PLQE")
-    if not os.path.isdir(f"{savepath}\\V"):
-        os.makedirs(f"{savepath}\\V")
+    # save in the same place as the PLQE plots
+    if not os.path.isdir(f"{path}\\QFLS_int_oc"):
+        os.makedirs(f"{path}\\QFLS_int_oc")
 
-    for filename_voc in filenames_voc:
-        # Asuming there is a sc file for every oc file, and it's saved by the same name format:
-        flux = float(filename_voc.split('_')[1])
-        exposure = float(filename_voc.split('_')[2])
+    for filename in filenames:
+        num_sun = float(filename.split('_')[1])
+        num_suns.append(num_sun)
+        flux = float(filename.split('_')[2])
+        fluxes.append(flux)
 
-        im_voc =  np.load(f"{path}\\oc\\{filename_voc}")/exposure
-        # im_isc =  np.load(f"{path}\\sc\\{filename_isc}")/exposure
-        
-        white_ref = white_mean_scaled*flux 
-
-        num_sun = flux/flux_1sun
+        PLQE = np.load(f"{path}\\{filename}")
+        PLQEs.append(np.mean(PLQE))
         voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
+        QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
 
-        rr = (im_voc)/(white_ref)
-        V =  voc_rad +  (sci.k*298/sci.e)*np.log(rr)
-        # convention: [num suns]_[J]_[flux]_.npy
-        filename = f"{num_sun}_{1-num_sun}_{flux}_"
+        filename = f"OC_{num_sun}_{flux}_"
+        np.save(f"{path}\\QFLS_int_oc\\{filename}", QFLS)
+    
+    PLQEs = np.array(PLQEs)
+    fluxes = np.array(fluxes)
+    num_suns = np.array(num_suns)
 
-        np.save(f"{savepath}\\PLQE\\PLQE_{filename}", rr)
-        np.save(f"{savepath}\\V\\V{filename}", V)
+    voc_rads = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_suns)+1)
+    QFLSs = voc_rads +  (sci.k*298/sci.e)*np.log(PLQEs)
+    Js = 1- num_suns
+    return QFLSs, Js, flux, num_suns
 
-def oc_sc_1sun(path, savepath, voc_rad, white_mean_scaled, led_1s):
+def oc_sc_1sun(path, flux_1sun):
     # For Voc_rad calculatuion:
     filenames_voc = find_npy(f"{path}\\oc") 
-    flux_1sun = ledf(led_1s)
-
+    
     for i, filename_voc in enumerate(filenames_voc):
         if i == len(filenames_voc):
             continue
