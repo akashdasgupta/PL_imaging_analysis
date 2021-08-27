@@ -91,7 +91,7 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
         raise ValueError("Couldn't find white params!")
 
     # calculate correction
-    correction = white_over_cell_correction(white_exposure, ledspecf, np.vectorize(BBf_cellf), 
+    correction = white_over_cell_correction(ledspecf, np.vectorize(BBf_cellf), 
                                                 bandgap, camqef, lenscalf, 0.99, filtcalf)
 
     # load white
@@ -110,7 +110,7 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
 
-def save_PLQE(datapath, savepath, whitefilename, whiteparamsfile, bandgap, savename='untitled'):
+def save_PLQE(datapath, savepath, whitefilename, whiteparamsfile, bandgap, flux1sun=0, savename='untitled'):
     if not os.path.isdir(f"{savepath}\\PLQE_{savename}"):
         os.makedirs(f"{savepath}\\PLQE_{savename}")
     filenames = find_npy(datapath)
