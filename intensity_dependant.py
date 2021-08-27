@@ -91,7 +91,7 @@ def intsweep_QFLS(path, voc_rad0):
     if not os.path.isdir(f"{path}\\QFLS_int_oc"):
         os.makedirs(f"{path}\\QFLS_int_oc")
 
-    for filename in filenames:
+    def process_one_file(filename):
         num_sun = float(filename.split('_')[1])
         flux = float(filename.split('_')[2])
 
@@ -101,7 +101,7 @@ def intsweep_QFLS(path, voc_rad0):
 
         filename = f"OC_{num_sun}_{flux}_"
         np.save(f"{path}\\QFLS_int_oc\\{filename}", QFLS)
-
+    Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
 def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
     for i in ['oc', 'sc']:
