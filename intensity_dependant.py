@@ -72,8 +72,15 @@ def average_recon_jv(path, voc_rad0):
 
     QFLSs =  voc_rads +  (sci.k*298/sci.e)*np.log(PLQEs)
     Js = (1-num_suns)
-    
-    return QFLSs, Js, bias, flux, num_suns
+
+    #### sort the lists before returning, low to high
+    QFLSs = [i for _,i in sorted(zip(fluxes, QFLSs))]
+    Js = [i for _,i in sorted(zip(fluxes, Js))]
+    num_suns.sort()
+    fluxes.sort()
+
+
+    return QFLSs, Js, bias, fluxes, num_suns
 
 
 def intsweep_QFLS(path, voc_rad0):
