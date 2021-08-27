@@ -99,7 +99,6 @@ def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flu
 
     # Extract params from filename
     bias = filename.split('_')[0]
-    print(bias)
     if bias.lower() != 'oc' and  bias.lower() != 'sc':
         bias = float(bias.split('=')[1])
     flux = float(filename.split('_')[1])
@@ -116,7 +115,6 @@ def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, f
         os.makedirs(f"{savepath}\\PLQE_{savename}")
     filenames = find_npy(datapath)
     for filename in filenames:
-        print(filename)
         bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}")
