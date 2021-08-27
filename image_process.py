@@ -70,7 +70,7 @@ def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf,
     return white_factor/cell_factor
 
 
-def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
+def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flux_1sun=0):
     # Flux at 1sun
     if flux_1sun == 0:
         flux_1sun = j1sunf(bandgap)
@@ -79,7 +79,7 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
     white_exposure = None
     white_flux = None
 
-    with open(whiteparamsfile,'r') as file:
+    with open(whiteparamsfilepath,'r') as file:
         reader = csv.reader(file)
         for row in reader:
             if row[0] == 'Exposure':
@@ -95,10 +95,11 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
                                                 bandgap, camqef, lenscalf, 0.99, filtcalf)
 
     # load white
-    white_mean = np.mean(np.load(whitefilename)) / white_exposure
+    white_mean = np.mean(np.load(whitefilepath)) / white_exposure
 
     # Extract params from filename
     bias = filename.split('_')[0]
+    print(bias)
     if bias.lower() != 'oc' or  bias.lower() != 'sc':
         bias = float(bias.split('=')[1])
     flux = float(filename.split('_')[1])
@@ -106,16 +107,17 @@ def PLQEmap(filename, whitefilename, whiteparamsfile, bandgap, flux_1sun=0):
     num_sun = flux/flux_1sun
 
     # Main calculation
-    im_cell =  np.load(filename)/exposure
+    im_cell =  np.load(f"{datapath}\\{filename}")/exposure
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
 
-def save_PLQE(datapath, savepath, whitefilename, whiteparamsfile, bandgap, flux1sun=0, savename='untitled'):
+def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, flux1sun=0, savename='untitled'):
     if not os.path.isdir(f"{savepath}\\PLQE_{savename}"):
         os.makedirs(f"{savepath}\\PLQE_{savename}")
     filenames = find_npy(datapath)
     for filename in filenames:
-        bias, num_sun, flux, PLQE =  PLQEmap(f"{datapath}\\{filename}", whitefilename, whiteparamsfile, bandgap)
+        print(filename)
+        bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}")
 
