@@ -100,7 +100,7 @@ def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flu
     # Extract params from filename
     bias = filename.split('_')[0]
     print(bias)
-    if bias.lower() != 'oc' or  bias.lower() != 'sc':
+    if bias.lower() != 'oc' and  bias.lower() != 'sc':
         bias = float(bias.split('=')[1])
     flux = float(filename.split('_')[1])
     exposure = float(filename.split('_')[2])
@@ -120,7 +120,6 @@ def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, f
         bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}")
-
 
 white_buffer=[None, None, None, None]
 def callback_return_size(image_name, shape):
