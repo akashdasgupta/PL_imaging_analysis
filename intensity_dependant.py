@@ -83,9 +83,6 @@ def average_recon_jv(path, voc_rad0):
 
 
 def intsweep_QFLS(path, voc_rad0):
-    PLQEs = []
-    fluxes = []
-    num_suns = []
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
     filenames = find_npy(f"{path}\\PLQE_oc") 
@@ -96,26 +93,15 @@ def intsweep_QFLS(path, voc_rad0):
 
     for filename in filenames:
         num_sun = float(filename.split('_')[1])
-        num_suns.append(num_sun)
         flux = float(filename.split('_')[2])
-        fluxes.append(flux)
 
-        PLQE = np.load(f"{path}\\{filename}")
-        PLQEs.append(np.mean(PLQE))
+        PLQE = np.load(f"{path}\\PLQE_oc\\{filename}")
         voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
         QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
 
         filename = f"OC_{num_sun}_{flux}_"
         np.save(f"{path}\\QFLS_int_oc\\{filename}", QFLS)
-    
-    PLQEs = np.array(PLQEs)
-    fluxes = np.array(fluxes)
-    num_suns = np.array(num_suns)
 
-    voc_rads = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_suns)+1)
-    QFLSs = voc_rads +  (sci.k*298/sci.e)*np.log(PLQEs)
-    Js = 1- num_suns
-    return QFLSs, Js, flux, num_suns
 
 def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
     for i in ['oc', 'sc']:
