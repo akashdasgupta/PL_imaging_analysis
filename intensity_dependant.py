@@ -57,7 +57,6 @@ def average_recon_jv(path, voc_rad0):
         flux = float(filename.split('_')[2])
         fluxes.append(flux)
 
-        ave_rad = 3 # Good idea to average over a bunch of pixels
         PLQE =  np.mean(np.load(f"{path}\\PLQE_oc\\{filename}"))
         PLQEs.append(PLQE)
 
@@ -74,8 +73,8 @@ def average_recon_jv(path, voc_rad0):
     Js = (1-num_suns)
 
     #### sort the lists before returning, low to high
-    QFLSs = [i for _,i in sorted(zip(fluxes, QFLSs))]
-    Js = [i for _,i in sorted(zip(fluxes, Js))]
+    QFLSs = np.array([i for _,i in sorted(zip(fluxes, QFLSs))])
+    Js = np.array([i for _,i in sorted(zip(fluxes, Js))])
     num_suns.sort()
     fluxes.sort()
 
