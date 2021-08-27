@@ -192,10 +192,14 @@ def get_idelity_map(path):
     filenames = find_npy(f"{path}\\QFLS_int_oc")
     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
     ln_curr =  np.log(num_suns)
-    QFLS_arrs = [np.load(filename) for filename in filenames]
+    QFLS_arrs = [np.load(f"{path}\\QFLS_int_oc\\{filename}") for filename in filenames]
 
     n_id = np.zeros(QFLS_arrs[0].shape)
+    # Must save so that we can memmap arr:
+    np.save('temp', n_id)
     def process_row(i):
+        # Opens arrat:
+        arr = np.load('temp.npy', mmap_mode='r+')
         for j in range(QFLS_arrs[0].shape[1]):
             QFLS_pp = []
             for QFLS_arr in QFLS_arrs:
@@ -212,6 +216,9 @@ def get_idelity_map(path):
                 theta = np.arccos(dp/(np.sqrt(np.dot(grad_vec,grad_vec))*np.sqrt(np.dot(next_vector,next_vector))))
                 if theta * 180/np.pi >= 2.5:
                     break
-            n_id[i,j] = sci.e*m/(sci.k*293)
-    Parallel(n_jobs=num_cores, backend='threading')(delayed(process_row)(row) for row in range(QFLS_arrs[0].shape[1]))
-    return n_id
+            arr[i,j] = sci.e*m/(sci.k*293)
+    Parallel(n_jobs=num_cores, verbose = 0)(delayed(process_row)(i) for i in range(QFLS_arrs[0].shape[0]))
+    n_id_final = np.load('temp.npy')
+    # Delete temp: 
+    os.remove('temp.npy')
+    return n_id_final
