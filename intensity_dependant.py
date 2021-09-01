@@ -82,25 +82,25 @@ def average_recon_jv(path, voc_rad0):
     return QFLSs, Js, bias, fluxes, num_suns
 
 
-def intsweep_QFLS(path, voc_rad0):
+def intsweep_QFLS(path, voc_rad0, bias):
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\PLQE_oc") 
+    filenames = find_npy(f"{path}\\PLQE_{bias}") 
 
     # save in the same place as the PLQE plots
-    if not os.path.isdir(f"{path}\\QFLS_int_oc"):
-        os.makedirs(f"{path}\\QFLS_int_oc")
+    if not os.path.isdir(f"{path}\\QFLS_int_{bias}"):
+        os.makedirs(f"{path}\\QFLS_int_{bias}")
 
     def process_one_file(filename):
         num_sun = float(filename.split('_')[1])
         flux = float(filename.split('_')[2])
 
-        PLQE = np.load(f"{path}\\PLQE_oc\\{filename}")
+        PLQE = np.load(f"{path}\\PLQE_{bias}\\{filename}")
         voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
         QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
 
-        filename = f"OC_{num_sun}_{flux}_"
-        np.save(f"{path}\\QFLS_int_oc\\{filename}", QFLS)
+        filename = f"{bias.upper()}_{num_sun}_{flux}_"
+        np.save(f"{path}\\QFLS_int_{bias}\\{filename}", QFLS)
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
 def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
@@ -222,3 +222,4 @@ def get_idelity_map(path):
     # Delete temp: 
     os.remove('temp.npy')
     return n_id_final
+
