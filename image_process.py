@@ -16,13 +16,13 @@ def averager(basepath, filenames):
     '''
     Opens and returns average of tiff files
     '''
-    temp = np.array(Image.open(basepath+'\\'+filenames[0]))
+    temp = np.array(Image.open(basepath+'/'+filenames[0]))
     rows, cols = temp.shape
     del temp
 
     buffer = np.zeros((rows, cols))
     for filename in filenames:
-        im = np.array(Image.open(basepath+'\\'+filename), dtype=np.float32) # So there's enough headroom for the uint16
+        im = np.array(Image.open(basepath+'/'+filename), dtype=np.float32) # So there's enough headroom for the uint16
         buffer += im
         del im # unnescesary but just in case
     average_arr = buffer / len(filenames)
@@ -111,18 +111,18 @@ def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flu
     num_sun = flux/flux_1sun
 
     # Main calculation
-    im_cell =  np.load(f"{datapath}\\{filename}")/exposure
+    im_cell =  np.load(f"{datapath}/{filename}")/exposure
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
 
 def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, flux1sun=0, savename='untitled'):
-    if not os.path.isdir(f"{savepath}\\PLQE_{savename}"):
-        os.makedirs(f"{savepath}\\PLQE_{savename}")
+    if not os.path.isdir(f"{savepath}/PLQE_{savename}"):
+        os.makedirs(f"{savepath}/PLQE_{savename}")
     filenames = find_npy(datapath)
     def process_one_file(filename):
         bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap)
         savefilename = f"{bias}_{num_sun}_{flux}_"
-        np.save(f"{savepath}\\PLQE_{savename}\\{savefilename}", PLQE)
+        np.save(f"{savepath}/PLQE_{savename}/{savefilename}", PLQE)
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
 white_buffer=[None, None, None, None]

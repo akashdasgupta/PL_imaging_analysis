@@ -7,7 +7,7 @@ def path_process(path):
         for dir in dirs:
             if dir.lower() != 'white':
                 db[dir] = []
-                for _, subdirs, _ in os.walk(f"{root}\\{dir}"):
+                for _, subdirs, _ in os.walk(f"{root}/{dir}"):
                     for subdir in subdirs:
                         try:
                             int(subdir)
@@ -38,7 +38,7 @@ def find_npy(datapath):
 
 
 def get_cam_exposure(path):
-    with open(path+'\\camera\\camera_setting_dump.txt') as file:
+    with open(path+'/camera/camera_setting_dump.txt') as file:
         for line in file:
             db = eval(line)
             db = eval(line)
@@ -65,7 +65,7 @@ def image_for_cropping(path):
     nominal_vs = [i.split('_')[1].split('=')[1] for i in image_names]
     max_filename = image_names[np.argmax(nominal_vs)]
 
-    im = np.array(Image.open(f"{path}\\{max_filename}"))
+    im = np.array(Image.open(f"{path}/{max_filename}"))
     im_scaled = im *(2**(8)/np.max(im)) # 8bit 
     image= im_scaled.astype(np.uint8)
     return image

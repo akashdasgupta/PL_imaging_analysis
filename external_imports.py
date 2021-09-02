@@ -11,7 +11,7 @@ import matplotlib.patheffects as PathEffects
 #######################################################################################
 # camera pixel to area at focal plane:
 
-with open(r".\calibration_data\camera_pixel_area.csv", 'r') as file:
+with open(r"./calibration_data/camera_pixel_area.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         pix = float(row[0])
@@ -26,7 +26,7 @@ del area
 
 nominal_v_cal = []
 num_photons = []
-with open(r".\calibration_data\ledcal.csv", 'r') as file:
+with open(r"./calibration_data/ledcal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         nominal_v_cal.append(float(row[0]))
@@ -39,7 +39,7 @@ del num_photons
 
 led_spec_wavel = []
 led_spec = []
-with open(r".\calibration_data\ledwavel.csv", 'r') as file:
+with open(r"./calibration_data/ledwavel.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         led_spec_wavel.append(float(row[0]))
@@ -63,7 +63,7 @@ def BBf_cellf(wavel, bandgap):
 
 cam_qe_wavel = []
 cam_qe = []
-with open(r".\calibration_data\camqe.csv", 'r') as file:
+with open(r"./calibration_data/camqe.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         cam_qe_wavel.append(float(row[0]))
@@ -76,7 +76,7 @@ del cam_qe
 
 filt_cal_wavel = []
 filt_cal = []
-with open(r".\calibration_data\filtcal.csv", 'r') as file:
+with open(r"./calibration_data/filtcal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         filt_cal_wavel.append(float(row[0]))
@@ -89,7 +89,7 @@ del filt_cal
 
 lens_cal_wavel = []
 lens_cal = []
-with open(r".\calibration_data\lenscal.csv", 'r') as file:
+with open(r"./calibration_data/lenscal.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         lens_cal_wavel.append(float(row[0]))
@@ -102,7 +102,7 @@ del lens_cal
 
 bandgap_i = []
 am_1_5 = []
-with open(r".\calibration_data\AM_1_5_photon.csv", 'r') as file:
+with open(r"./calibration_data/AM_1_5_photon.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         bandgap_i.append(float(row[0]))
@@ -117,7 +117,7 @@ j1sunf = lambda bandgap : integrate.simps(am15f(np.arange(bandgap,4,0.001)),
 
 bandgap_v = []
 voc_rad = []
-with open(r".\calibration_data\voc_rad_eg.csv", 'r') as file:
+with open(r"./calibration_data/voc_rad_eg.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         bandgap_v.append(float(row[0]))
@@ -128,7 +128,7 @@ del voc_rad
 
 #######################################################################################
 # Area for 1 device (dark area on solar sim)
-with open(r".\calibration_data\device_area.csv", 'r') as file:
+with open(r"./calibration_data/device_area.csv", 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         device_area = float(row[1])
