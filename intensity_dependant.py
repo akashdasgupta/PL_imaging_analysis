@@ -12,7 +12,7 @@ def single_pix_recon_jv(path, row, col, voc_rad0):
     num_suns = []
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\PLQE_oc") 
+    filenames = find_npy(f"{path}/PLQE_oc") 
 
     for filename in filenames:
         # Get the parameters
@@ -22,7 +22,7 @@ def single_pix_recon_jv(path, row, col, voc_rad0):
         fluxes.append(flux)
 
         ave_rad = 3 # Good idea to average over a bunch of pixels
-        PLQE =  np.mean(np.load(f"{path}\\PLQE_oc\\{filename}")[row-ave_rad:row+ave_rad,
+        PLQE =  np.mean(np.load(f"{path}/PLQE_oc/{filename}")[row-ave_rad:row+ave_rad,
                                                                        col-ave_rad:col+ave_rad])
         PLQEs.append(PLQE)
 
@@ -48,7 +48,7 @@ def average_recon_jv(path, voc_rad0):
     num_suns = []
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\PLQE_oc") 
+    filenames = find_npy(f"{path}/PLQE_oc") 
 
     for filename in filenames:
         # Get the parameters
@@ -57,7 +57,7 @@ def average_recon_jv(path, voc_rad0):
         flux = float(filename.split('_')[2])
         fluxes.append(flux)
 
-        PLQE =  np.mean(np.load(f"{path}\\PLQE_oc\\{filename}"))
+        PLQE =  np.mean(np.load(f"{path}/PLQE_oc/{filename}"))
         PLQEs.append(PLQE)
 
    
@@ -85,31 +85,31 @@ def average_recon_jv(path, voc_rad0):
 def intsweep_QFLS(path, voc_rad0, bias):
     # For Voc_rad calculatuion:
     jsc_by_j0 = np.exp(sci.e*voc_rad0/(sci.k*298))-1
-    filenames = find_npy(f"{path}\\PLQE_{bias}") 
+    filenames = find_npy(f"{path}/PLQE_{bias}") 
 
     # save in the same place as the PLQE plots
-    if not os.path.isdir(f"{path}\\QFLS_int_{bias}"):
-        os.makedirs(f"{path}\\QFLS_int_{bias}")
+    if not os.path.isdir(f"{path}/QFLS_int_{bias}"):
+        os.makedirs(f"{path}/QFLS_int_{bias}")
 
     def process_one_file(filename):
         num_sun = float(filename.split('_')[1])
         flux = float(filename.split('_')[2])
 
-        PLQE = np.load(f"{path}\\PLQE_{bias}\\{filename}")
+        PLQE = np.load(f"{path}/PLQE_{bias}/{filename}")
         voc_rad = (sci.k*298/sci.e)*np.log((jsc_by_j0*num_sun)+1)
         QFLS =  voc_rad +  (sci.k*298/sci.e)*np.log(PLQE)
 
         filename = f"{bias.upper()}_{num_sun}_{flux}_"
-        np.save(f"{path}\\QFLS_int_{bias}\\{filename}", QFLS)
+        np.save(f"{path}/QFLS_int_{bias}/{filename}", QFLS)
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
 def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
     for i in ['oc', 'sc']:
-        if not os.path.isdir(f"{path}\\PLQE_oc_sc_1sun\\{i}"):
-            os.makedirs(f"{path}\\PLQE_oc_sc_1sun\\{i}")
+        if not os.path.isdir(f"{path}/PLQE_oc_sc_1sun/{i}"):
+            os.makedirs(f"{path}/PLQE_oc_sc_1sun/{i}")
 
     # For Voc_rad calculatuion:
-    filenames_oc = find_npy(f"{path}\\PLQE_oc") 
+    filenames_oc = find_npy(f"{path}/PLQE_oc") 
     fluxes = []
     for filename_oc in filenames_oc:
         flux = float(filename_oc.split('_')[2])
@@ -128,51 +128,51 @@ def oc_sc_1sun(path, flux_1sun, device_area=0.3087):
         filename_sc = 'SC_' + '_'.join(filename_oc.split('_')[1:])
         flux = float(filename_oc.split('_')[2])
         if flux == flux_above:
-            PLQE_oc_above = np.load(f"{path}\\PLQE_oc\\{filename_oc}")
-            PLQE_sc_above = np.load(f"{path}\\PLQE_sc\\{filename_sc}")
+            PLQE_oc_above = np.load(f"{path}/PLQE_oc/{filename_oc}")
+            PLQE_sc_above = np.load(f"{path}/PLQE_sc/{filename_sc}")
         elif flux == flux_bellow:
-            PLQE_oc_bellow = np.load(f"{path}\\PLQE_oc\\{filename_oc}")
-            PLQE_sc_bellow = np.load(f"{path}\\PLQE_sc\\{filename_sc}")
+            PLQE_oc_bellow = np.load(f"{path}/PLQE_oc/{filename_oc}")
+            PLQE_sc_bellow = np.load(f"{path}/PLQE_sc/{filename_sc}")
     
     # oc array interpolate:
     m_ocarr = (PLQE_oc_bellow - PLQE_oc_above)/ (flux_bellow-flux_above)
     c_ocarr = PLQE_oc_bellow - m_ocarr*flux_bellow
     oc_1sun = m_ocarr*flux_1sun + c_ocarr
 
-    np.save(f"{path}\\PLQE_oc_sc_1sun\\oc\\OC_1_{flux_1sun}", oc_1sun)
+    np.save(f"{path}/PLQE_oc_sc_1sun/oc/OC_1_{flux_1sun}", oc_1sun)
     # sc array interpolate:
     m_scarr = (PLQE_sc_bellow - PLQE_sc_above)/ (flux_bellow-flux_above)
     c_scarr = PLQE_sc_bellow - m_scarr*flux_bellow
     sc_1sun = m_scarr*flux_1sun + c_scarr
-    np.save(f"{path}\\PLQE_oc_sc_1sun\\sc\\SC_1_{flux_1sun}", sc_1sun)
+    np.save(f"{path}/PLQE_oc_sc_1sun/sc/SC_1_{flux_1sun}", sc_1sun)
 
     ####### get the sm stuff##########
     # OC
     vlist_temp = []
     jlist_temp = [] 
-    with open(f"{path}\\PLQE_oc\\source_meter.csv" 'r') as file:
+    with open(f"{path}/PLQE_oc/source_meter.csv" 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             vlist_temp.append(float(row[0]))
     Voc = inter([flux_above, flux_bellow], 
                 [sorted(vlist_temp)[flux_above_index], sorted(vlist_temp)[flux_above_index-1]])(flux_1sun)
-    with open(f"{path}\\PLQE_sc\\source_meter.csv" 'r') as file:
+    with open(f"{path}/PLQE_sc/source_meter.csv" 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             jlist_temp.append(float(row[0]) * (1e3/device_area))
     Jsc = inter([flux_above, flux_bellow], 
                 [sorted(jlist_temp)[flux_above_index], sorted(jlist_temp)[flux_above_index-1]])(flux_1sun)
     
-    with open(f"{path}\\PLQE_oc_sc_1sun\\JV",'w') as file:
+    with open(f"{path}/PLQE_oc_sc_1sun/JV",'w') as file:
         writer = csv.writer()
         writer.writerows([['Voltage measured at oc (V)', Voc],
                           ['Current measured at sc (mAcm^-2)', Jsc]]) 
 
 def intsweep_coleff(path):
-    if not os.path.isdir(f"{path}\\pseudo_col_eff"):
-        os.makedirs(f"{path}\\pseudo_col_eff")
+    if not os.path.isdir(f"{path}/pseudo_col_eff"):
+        os.makedirs(f"{path}/pseudo_col_eff")
     
-    oc_filenames = find_npy(f"{path}\\PLQE_oc")   
+    oc_filenames = find_npy(f"{path}/PLQE_oc")   
     for oc_filename in oc_filenames:
         sc_filename = 'SC_' + '_'.join(oc_filename.split('_')[1:])
         
@@ -181,18 +181,18 @@ def intsweep_coleff(path):
         
         savename = f"NA_{num_suns}_{flux}_"
 
-        #print(f"{oc_path}\\{oc_file}")
-        oc_image = np.load(f"{path}\\PLQE_oc\\{oc_filename}")
-        sc_image = np.load(f"{path}\\PLQE_sc\\{sc_filename}")
+        #print(f"{oc_path}/{oc_file}")
+        oc_image = np.load(f"{path}/PLQE_oc/{oc_filename}")
+        sc_image = np.load(f"{path}/PLQE_sc/{sc_filename}")
         psudo_col_eff = (oc_image-sc_image)/oc_image
         
-        np.save(f"{path}\\pseudo_col_eff\\{savename}",psudo_col_eff)
+        np.save(f"{path}/pseudo_col_eff/{savename}",psudo_col_eff)
 
 def get_idelity_map(path):
-    filenames = find_npy(f"{path}\\QFLS_int_oc")
+    filenames = find_npy(f"{path}/QFLS_int_oc")
     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
     ln_curr =  np.log(num_suns)
-    QFLS_arrs = [np.load(f"{path}\\QFLS_int_oc\\{filename}") for filename in filenames]
+    QFLS_arrs = [np.load(f"{path}/QFLS_int_oc/{filename}") for filename in filenames]
 
     n_id = np.zeros(QFLS_arrs[0].shape)
     # Must save so that we can memmap arr:
@@ -224,10 +224,10 @@ def get_idelity_map(path):
     return n_id_final
 
 def get_J0_map(path):
-    filenames = find_npy(f"{path}\\QFLS_int_oc")
+    filenames = find_npy(f"{path}/QFLS_int_oc")
     flux = np.array([float(i.split('_')[2]) for i in filenames])
     JGs =  flux * (sci.e*1e3) # in mA
-    QFLS_arrs = [np.load(f"{path}\\QFLS_int_oc\\{filename}") for filename in filenames]
+    QFLS_arrs = [np.load(f"{path}/QFLS_int_oc/{filename}") for filename in filenames]
     
     plt.scatter(np.exp((sci.e*np.array([np.mean(i) for i in QFLS_arrs]))/(sci.k * 298)), JGs)
     plt.show()
@@ -267,10 +267,10 @@ def get_J0_map(path):
     return J0_final
 
 def get_Jsc_map(path):
-    J0 = np.load(f"{path}\\J0.npy")
+    J0 = np.load(f"{path}/J0.npy")
 
     ### Get sc image at 1 sun
-    filenames = find_npy(f"{path}\\QFLS_int_sc")
+    filenames = find_npy(f"{path}/QFLS_int_sc")
     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
 
     filenames = [i for _,i in sorted(zip(num_suns, filenames))]
@@ -280,9 +280,9 @@ def get_Jsc_map(path):
     for i,num_sun in enumerate(num_suns):
         if (num_sun-1)/abs(num_sun- 1) != sign_0:
             num_sun_above = num_sun
-            arr_sc_above = np.load(f"{path}\\QFLS_int_sc\\{filenames[i]}")
+            arr_sc_above = np.load(f"{path}/QFLS_int_sc/{filenames[i]}")
             num_sun_bellow = num_suns[i-1]
-            arr_sc_bellow = np.load(f"{path}\\QFLS_int_sc\\{filenames[i-1]}")
+            arr_sc_bellow = np.load(f"{path}/QFLS_int_sc/{filenames[i-1]}")
     
     m_arr = (arr_sc_above - arr_sc_bellow)/(num_sun_above-num_sun_bellow)
     c_arr = arr_sc_above - m_arr*num_sun_above
