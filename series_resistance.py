@@ -1,3 +1,7 @@
+####################################
+# UNVERIFIED that this works or produces real plots, DO NOT USE YET!!!
+####################################
+
 from external_imports import *
 from image_process import *
 from joblib import Parallel, delayed
