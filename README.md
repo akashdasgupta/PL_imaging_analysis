@@ -1,4 +1,4 @@
-# EL ANALYSIS SCRIPT
+# PL IMAGING: ANALYSIS SCRIPT
 *Analysis script for data collected using PL imaging setup, publication DOI: [WHEN AVALIABLE]*
 
 *Developer: Akash Dasgupta*
