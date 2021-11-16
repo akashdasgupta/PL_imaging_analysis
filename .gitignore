@@ -4,3 +4,4 @@ __pycache__*
 *.old
 *.ffs_db
 paper*
+*_local*
