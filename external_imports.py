@@ -84,6 +84,21 @@ with open(r"./calibration_data/filtcal.csv", 'r') as file:
 filtcalf = inter(filt_cal_wavel, filt_cal)
 del filt_cal_wavel
 del filt_cal
+
+#######################################################################################
+# Filter response function 2:
+
+filt_cal_wavel = []
+filt_cal = []
+with open(r"./calibration_data/filtcal.csv", 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        filt_cal_wavel.append(float(row[0]))
+        filt_cal.append(float(row[1])**2)
+filtcalf2 = inter(filt_cal_wavel, filt_cal)
+del filt_cal_wavel
+del filt_cal
+
 #######################################################################################
 # Lens calibration (alledgely):
 
