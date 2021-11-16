@@ -47,7 +47,7 @@ def white_nonunif(imarr, center_row, center_col, diam):
 def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cmax):
     """
     Corrects for effect of beam nonuniformity in the raw counts image
-    """
+    """ 
     cropped_white_norm = white_imarr_norm[rmin:rmax, cmin:cmax]
     cropped_raw_image = imarr[rmin:rmax, cmin:cmax]
     cropped_ref_imarr = ref_imarr[rmin:rmax, cmin:cmax]
@@ -75,7 +75,7 @@ def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf,
     return white_factor/cell_factor
 
 
-def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flux_1sun=0):
+def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=0):
     # Flux at 1sun
     if flux_1sun == 0:
         flux_1sun = j1sunf(bandgap)
@@ -97,7 +97,7 @@ def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flu
 
     # calculate correction
     correction = white_over_cell_correction(ledspecf, np.vectorize(BBf_cellf), 
-                                                bandgap, camqef, lenscalf, 0.99, filtcalf)
+                                                bandgap, camqef, lenscalf, 0.99, filterODf)
 
     # load white
     white_mean = np.mean(np.load(whitefilepath)) / white_exposure
@@ -115,12 +115,12 @@ def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, flu
     PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
     return bias, num_sun, flux, PLQE
 
-def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, flux1sun=0, savename='untitled'):
+def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=0, savename='untitled'):
     if not os.path.isdir(f"{savepath}/PLQE_{savename}"):
         os.makedirs(f"{savepath}/PLQE_{savename}")
     filenames = find_npy(datapath)
     def process_one_file(filename):
-        bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap)
+        bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=flux_1sun)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}/PLQE_{savename}/{savefilename}", PLQE)
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
