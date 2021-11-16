@@ -1,5 +1,7 @@
+from scipy.interpolate.fitpack2 import BivariateSpline
 from external_imports import *
 from shutil import copyfile
+
 
 def get_nominal_v(path):
     nominal_v = []
