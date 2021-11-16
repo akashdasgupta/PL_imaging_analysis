@@ -18,6 +18,6 @@
 	* **INTENSITY_DEPENDANT.ipyb**series_resistance.ipynb: Analysis of images taken at open and short circuit, intensit dependant
 	* **VOLTAGE DEPENDANT.ipyb**: Analysis for images taken at constant illumination, sweeping voltage
 	* **Imaging_Paper_figures_local.ipynb**: Used to create transport layer figures and cell figures for thr paper ([DOI WHEN AVALIABLE])
-	* **series_resistance.ipynb**: DON'T UE THIS, IT'S NOT BEEN VALIDATED YET!!!
+	* **series_resistance.ipynb**: DON'T USE THIS, IT'S NOT BEEN VALIDATED YET!!!
 	
-For Queries please email: akash.dasgupta@physics.ox.ac.uk
+For queries please email: akash.dasgupta@physics.ox.ac.uk
