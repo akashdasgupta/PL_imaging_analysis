@@ -223,14 +223,14 @@ def get_idelity_map(path):
     os.remove('temp.npy')
     return n_id_final
 
-def get_J0_map(path):
+def get_J0_map(path, JG_0):
     filenames = find_npy(f"{path}/QFLS_int_oc")
-    flux = np.array([float(i.split('_')[2]) for i in filenames])
-    JGs =  flux * (sci.e*1e3) # in mA
+    num_suns = np.array([float(i.split('_')[1]) for i in filenames])
+    JGs =  num_suns* JG_0  # in mA
     QFLS_arrs = [np.load(f"{path}/QFLS_int_oc/{filename}") for filename in filenames]
     
-    plt.scatter(np.exp((sci.e*np.array([np.mean(i) for i in QFLS_arrs]))/(sci.k * 298)), JGs)
-    plt.show()
+#     plt.scatter(np.exp((sci.e*np.array([np.mean(i) for i in QFLS_arrs]))/(sci.k * 298)), JGs)
+#     plt.show()
 
     J0 = np.zeros(QFLS_arrs[0].shape)
     # Must save so that we can memmap arr:
@@ -266,30 +266,89 @@ def get_J0_map(path):
     os.remove('temp.npy')
     return J0_final
 
-def get_Jsc_map(path):
-    J0 = np.load(f"{path}/J0.npy")
 
-    ### Get sc image at 1 sun
-    filenames = find_npy(f"{path}/QFLS_int_sc")
-    num_suns = np.array([float(i.split('_')[1]) for i in filenames])
-
-    filenames = [i for _,i in sorted(zip(num_suns, filenames))]
-    num_suns.sort()
-
-    sign_0 = (num_suns[0] - 1)/abs(num_suns[0] - 1)
-    for i,num_sun in enumerate(num_suns):
-        if (num_sun-1)/abs(num_sun- 1) != sign_0:
-            num_sun_above = num_sun
-            arr_sc_above = np.load(f"{path}/QFLS_int_sc/{filenames[i]}")
-            num_sun_bellow = num_suns[i-1]
-            arr_sc_bellow = np.load(f"{path}/QFLS_int_sc/{filenames[i-1]}")
+# UNSUPORTED AS OF NOW!
+# def get_Jsc_map(path, bandgap):
+#     JG_0 = j1sunf(bandgap)*sci.e*1000
+#     J0 = get_J0_map(path, JG_0)
     
-    m_arr = (arr_sc_above - arr_sc_bellow)/(num_sun_above-num_sun_bellow)
-    c_arr = arr_sc_above - m_arr*num_sun_above
-    QFLS_sc = m_arr + c_arr 
-    ###
 
-    JG = (float(filenames[0].split('_')[2]) /float(filenames[0].split('_')[1]))*(sci.e*1000)
-    J_loss = J0 * np.exp((sci.e*QFLS_sc)/(sci.k * 298))
-    J_sc = JG - J_loss
-    return J_sc, J_loss
+#     ### Get sc image at 1 sun #######################################
+#     filenames = find_npy(f"{path}/QFLS_int_sc")
+#     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
+
+#     filenames = [i for _,i in sorted(zip(num_suns, filenames))]
+#     num_suns.sort()
+
+#     sign_0 = (num_suns[0] - 1)/abs(num_suns[0] - 1)
+#     for i,num_sun in enumerate(num_suns):
+#         if (num_sun-1)/abs(num_sun- 1) != sign_0:
+#             num_sun_above = num_sun
+#             arr_sc_above = np.load(f"{path}/QFLS_int_sc/{filenames[i]}")
+#             num_sun_bellow = num_suns[i-1]
+#             arr_sc_bellow = np.load(f"{path}/QFLS_int_sc/{filenames[i-1]}")
+#             break
+    
+#     m_arr = (arr_sc_above - arr_sc_bellow)/(num_sun_above-num_sun_bellow)
+#     c_arr = arr_sc_above - m_arr*num_sun_above
+#     QFLS_sc = m_arr + c_arr 
+    
+#     with open(f"{path}/Intensity_dependant_voc_Jsc.csv",'r') as file:
+#         reader = csv.reader(file)
+#         next(reader)
+#         for row in reader:
+#             num_sun_i = float(row[1])
+#             if num_sun_i == num_sun_above:
+#                 Jsc_above = float(row[4])
+#             if num_sun_i == num_sun_bellow:
+#                 Jsc_bellow = float(row[4])
+#     J_sc_meas = inter([num_sun_above,num_sun_bellow],[Jsc_above,Jsc_bellow])(1)
+#     ###############################################################
+    
+#     JG = JG_0
+#     J_loss = J0 * np.exp((sci.e*QFLS_sc)/(sci.k * 298))
+#     J_sc = JG - J_loss
+    
+#     i = 0
+#     while abs(np.mean(J_sc)-J_sc_meas) > 0.01*J_sc_meas:
+#         print(f"Iter: {i}")
+#         i+= 1
+#         JG = J_sc_meas + np.mean(J_loss)
+#         J0 *= JG / JG_0
+#         J_loss = J0 * np.exp((sci.e*QFLS_sc)/(sci.k * 298))
+#         J_sc = JG - J_loss
+    
+    
+#     return J_sc, J_loss, JG
+
+
+def collect_meas_csv(rawpath, savepath, cell_area=0.3087):
+    vocs = []
+    jscs = []
+    LEDs = []
+    with open(f"{rawpath}/oc/source_meter.csv",'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            vocs.append(float(row[0]))
+    with open(f"{rawpath}/oc/LED_power_supply.csv",'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            LEDs.append(float(row[0]))
+    with open(f"{rawpath}/sc/source_meter.csv",'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            jscs.append(float(row[1])*(1e3/cell_area))
+    ###assuming they all go low to high in the same way
+    LEDs.sort()
+    vocs.sort()
+    jscs.sort()
+
+    num_suns = [i.split('_')[1] for i in find_npy(f"{savepath}/PLQE_oc")]
+    num_suns.sort()
+    fluxes = [i.split('_')[2] for i in find_npy(f"{savepath}/PLQE_oc")]
+    fluxes.sort()
+
+    with open(f"{savepath}/Intensity_dependant_voc_Jsc.csv",'w',newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["LED voltage(V)", "Numsuns", "Flux (cm^-2)","Voc (V)", "Jsc (mAcm^-2)"])
+        writer.writerows(zip(LEDs,num_suns,fluxes,vocs,jscs))
