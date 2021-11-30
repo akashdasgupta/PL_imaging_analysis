@@ -5,3 +5,4 @@ __pycache__*
 *.ffs_db
 paper*
 *_local*
+diode_cal*
