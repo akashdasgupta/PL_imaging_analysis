@@ -75,55 +75,79 @@ def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf,
     return white_factor/cell_factor
 
 
-def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=0):
-    # Flux at 1sun
-    if flux_1sun == 0:
-        flux_1sun = j1sunf(bandgap)
-
-    # Load the white params: 
-    white_exposure = None
-    white_flux = None
-
-    with open(whiteparamsfilepath,'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if row[0] == 'Exposure':
-                white_exposure = float(row[1])
-            if row[0] == 'Flux scale':
-                white_flux = float(row[1])
-
-    if white_exposure == None or white_flux == None:
-        raise ValueError("Couldn't find white params!")
-
-    # calculate correction
-    correction = white_over_cell_correction(ledspecf, np.vectorize(BBf_cellf), 
-                                                bandgap, camqef, lenscalf, 0.99, filterODf)
-
-    # load white
-    white_mean = np.mean(np.load(whitefilepath)) / white_exposure
-
-    # Extract params from filename
+def PLQEmap(datapath, filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=0, external_PLQE=None):
     bias = filename.split('_')[0]
     if bias.lower() != 'oc' and  bias.lower() != 'sc':
         bias = float(bias.split('=')[1])
     flux = float(filename.split('_')[1])
-    exposure = float(filename.split('_')[2])
     num_sun = flux/flux_1sun
 
-    # Main calculation
-    im_cell =  np.load(f"{datapath}/{filename}")/exposure
-    PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
+
+    if external_PLQE:
+        im_cell =  np.load(f"{datapath}/{filename}")
+        PLQE = (im_cell/np.mean(im_cell) )* external_PLQE
+    else: 
+        # Flux at 1sun
+        if flux_1sun == 0:
+            flux_1sun = j1sunf(bandgap)
+
+        # Load the white params: 
+        white_exposure = None
+        white_flux = None
+
+        with open(whiteparamsfilepath,'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == 'Exposure':
+                    white_exposure = float(row[1])
+                if row[0] == 'Flux scale':
+                    white_flux = float(row[1])
+
+        if white_exposure == None or white_flux == None:
+            raise ValueError("Couldn't find white params!")
+
+        # calculate correction
+        correction = white_over_cell_correction(ledspecf, np.vectorize(BBf_cellf), 
+                                                    bandgap, camqef, lenscalf, 0.99, filterODf)
+
+        # load white
+        white_mean = np.mean(np.load(whitefilepath)) / white_exposure
+
+        # Extract params from filename
+        exposure = float(filename.split('_')[2])
+
+
+        # Main calculation
+        im_cell =  np.load(f"{datapath}/{filename}")/exposure
+        PLQE = (im_cell/white_mean) * correction * (white_flux/flux)
+
     return bias, num_sun, flux, PLQE
 
 def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=0, savename='untitled'):
     if not os.path.isdir(f"{savepath}/PLQE_{savename}"):
         os.makedirs(f"{savepath}/PLQE_{savename}")
     filenames = find_npy(datapath)
-    def process_one_file(filename):
-        bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=flux_1sun)
+
+    if os.path.isfile(f"{datapath}/plqe_ext.txt"):
+        with open(f"{datapath}/plqe_ext.txt",'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                PLQE_ext = float(row[0])
+                break
+    else:
+        PLQE_ext=None
+        print('No ext for: ', datapath)
+    print('I got herer!')
+    # def process_one_file(filename):
+    #     bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=flux_1sun)
+    #     savefilename = f"{bias}_{num_sun}_{flux}_"
+    #     np.save(f"{savepath}/PLQE_{savename}/{savefilename}", PLQE)
+    for filename in filenames:
+        bias, num_sun, flux, PLQE =  PLQEmap(datapath,filename, whitefilepath, whiteparamsfilepath, bandgap, filterODf, flux_1sun=flux_1sun,external_PLQE=PLQE_ext)
         savefilename = f"{bias}_{num_sun}_{flux}_"
         np.save(f"{savepath}/PLQE_{savename}/{savefilename}", PLQE)
-    Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
+    
+    # Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
 white_buffer=[None, None, None, None]
 def callback_return_size(image_name, shape):
