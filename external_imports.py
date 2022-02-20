@@ -7,6 +7,7 @@ from scipy.interpolate import interp1d as inter
 import scipy.integrate as integrate
 import matplotlib.patches as patches
 import matplotlib.patheffects as PathEffects
+import scipy.fftpack as sfft
 
 '''
 Here we pull in a bunch of imports all the scripts will need, and pull all calibrations into memory.
