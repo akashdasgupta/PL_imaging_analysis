@@ -135,7 +135,7 @@ def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, f
     
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
-ddef external_PLQE_averager(datapath, savepath):
+def external_PLQE_averager(datapath, savepath):
 
     path_db = path_process(datapath)
     for key in path_db.keys():
@@ -186,14 +186,17 @@ ddef external_PLQE_averager(datapath, savepath):
                 pass # I'll do this later
 
 
-def fftbin(imagepath):
+def fftbin(imagepath): 
     cart_im = np.load(imagepath)
+    
+    # Figure out freq. spacing
+    dx = 1 / pixels_per_cm # cm in 1 pix
+    dxP = 1 / (dx * cart_im.shape[0])
+    dyP = 1 / (dx * cart_im.shape[0])
             
     r_binwidth = 1.5
-    r_max = np.sqrt(np.sum([i**2 for i in cart_im.shape]))/2
-    
+    r_max = np.sqrt((cart_im.shape[0]*dxP)**2 + (cart_im.shape[0]*dyP)**2)/2
     r_binedges = np.arange(0, r_max, r_binwidth)
-    
     
     theta_summed = np.zeros(r_binedges.shape)
     theta_num  = np.zeros(r_binedges.shape)
@@ -205,8 +208,8 @@ def fftbin(imagepath):
         theta_num = np.load('temp2.npy', mmap_mode='r+')
         for i in range(cart_im.shape[0]):
             for j in range(cart_im.shape[1]):
-                x = i - cart_im.shape[0]/2
-                y = cart_im.shape[1]/2 - j
+                x = (i - cart_im.shape[0]/2)*dxP
+                y = (cart_im.shape[1]/2 - j)*dyP
                 r = np.sqrt(x**2 + y**2)
 
                 r_binedge = r_binedges[k]
@@ -223,7 +226,7 @@ def fftbin(imagepath):
     os.remove('temp2.npy')
     
     
-    return theta_summed_f / theta_num_f
+    return r_binedges, theta_summed_f / theta_num_f
             
 
 
