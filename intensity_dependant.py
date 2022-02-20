@@ -188,7 +188,7 @@ def intsweep_coleff(path):
         
         np.save(f"{path}/pseudo_col_eff/{savename}",psudo_col_eff)
 
-def get_idelity_map(path):
+def get_idelity_map_autofit(path):
     filenames = find_npy(f"{path}/QFLS_int_oc")
     num_suns = np.array([float(i.split('_')[1]) for i in filenames])
     ln_curr =  np.log(num_suns)
@@ -222,6 +222,51 @@ def get_idelity_map(path):
     # Delete temp: 
     os.remove('temp.npy')
     return n_id_final
+
+
+def get_idelity_map(path, sunmin, sunmax):
+
+    lnmin = np.log(sunmin)
+    lnmax = np.log(sunmax)
+
+    filenames = find_npy(f"{path}/QFLS_int_oc")
+    num_suns = np.array([float(i.split('_')[1]) for i in filenames])
+    ln_curr =  np.log(num_suns)
+    QFLS_arrs = [np.load(f"{path}/QFLS_int_oc/{filename}") for filename in filenames]
+
+    n_id = np.zeros(QFLS_arrs[0].shape)
+    # Must save so that we can memmap arr:
+    np.save('temp', n_id)
+    def process_row(i):
+        # Opens arrat:
+        arr = np.load('temp.npy', mmap_mode='r+')
+        for j in range(QFLS_arrs[0].shape[1]):
+            QFLS_pp = []
+            for QFLS_arr in QFLS_arrs:
+                QFLS_pp.append(QFLS_arr[i,j])
+            
+            QFLS_pp = [x for _,x in sorted(zip(ln_curr,QFLS_pp))]
+            ln_curr.sort()
+
+            minindex = np.argmin(abs(ln_curr-lnmin))
+            maxindex = np.argmin(abs(ln_curr-lnmax))
+
+            m,c = stats.linregress(ln_curr[minindex:maxindex], QFLS_pp[minindex:maxindex])[0:2]
+            plt.scatter(ln_curr[minindex:maxindex], QFLS_pp[minindex:maxindex])
+            plt.plot(ln_curr[minindex:maxindex], m*ln_curr[minindex:maxindex] + c)
+               
+            arr[i,j] = sci.e*m/(sci.k*293)
+    Parallel(n_jobs=num_cores, verbose = 0)(delayed(process_row)(i) for i in range(QFLS_arrs[0].shape[0]))
+    n_id_final = np.load('temp.npy')
+    # Delete temp: 
+    os.remove('temp.npy')
+    return n_id_final
+
+
+
+
+
+
 
 def get_J0_map(path, JG_0):
     filenames = find_npy(f"{path}/QFLS_int_oc")
