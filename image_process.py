@@ -186,7 +186,45 @@ def external_PLQE_averager(datapath, savepath):
                 pass # I'll do this later
 
 
-       
+def fftbin(imagepath):
+    cart_im = np.load(imagepath)
+            
+    r_binwidth = 1.5
+    r_max = np.sqrt(np.sum([i**2 for i in cart_im.shape]))/2
+    
+    r_binedges = np.arange(0, r_max, r_binwidth)
+    
+    
+    theta_summed = np.zeros(r_binedges.shape)
+    theta_num  = np.zeros(r_binedges.shape)
+    np.save('temp1', theta_summed)
+    np.save('temp2', theta_num)
+    
+    def process_row(k):
+        theta_summed = np.load('temp1.npy', mmap_mode='r+')
+        theta_num = np.load('temp2.npy', mmap_mode='r+')
+        for i in range(cart_im.shape[0]):
+            for j in range(cart_im.shape[1]):
+                x = i - cart_im.shape[0]/2
+                y = cart_im.shape[1]/2 - j
+                r = np.sqrt(x**2 + y**2)
+
+                r_binedge = r_binedges[k]
+                if r_binedge <= r < r_binedge + r_binwidth:
+                    theta_summed[k] += cart_im[i,j]
+                    theta_num += 1
+    
+    
+    Parallel(n_jobs=num_cores, verbose = 0)(delayed(process_row)(k) for k in range(len(r_binedges)))
+    
+    theta_summed_f = np.load('temp1.npy')
+    theta_num_f = np.load('temp2.npy')
+    os.remove('temp1.npy')
+    os.remove('temp2.npy')
+    
+    
+    return theta_summed_f / theta_num_f
+            
 
 
 
