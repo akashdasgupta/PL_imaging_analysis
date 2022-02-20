@@ -135,7 +135,7 @@ def save_PLQE(datapath, savepath, whitefilepath, whiteparamsfilepath, bandgap, f
     
     Parallel(n_jobs=num_cores)(delayed(process_one_file)(filename) for filename in filenames)
 
-def external_PLQE_averager(datapath, savepath):
+ddef external_PLQE_averager(datapath, savepath):
 
     path_db = path_process(datapath)
     for key in path_db.keys():
@@ -173,11 +173,11 @@ def external_PLQE_averager(datapath, savepath):
 
 
             for pix in path_db[key]:
-                filenames = find_npy(f"{datapath}/{key}/{pix}/{bias}")
+                filenames = find_npy(f"{savepath}/{key}/{pix}/PLQE_{bias}")
                 for filename in filenames:
-                    arr = np.load(f"{datapath}/{key}/{pix}/{bias}/{filename}")
+                    arr = np.load(f"{savepath}/{key}/{pix}/PLQE_{bias}/{filename}")
                     corrected_arr = arr * correction
-                    np.save(f"{datapath}/{key}/{pix}/{bias}/{filename}", corrected_arr)
+                    np.save(f"{savepath}/{key}/{pix}/PLQE_{bias}/{filename}", corrected_arr)
 
 
 
