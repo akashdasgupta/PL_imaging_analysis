@@ -1,5 +1,5 @@
 # PL IMAGING: ANALYSIS SCRIPT
-*Analysis script for data collected using PL imaging setup, publication DOI: [WHEN AVALIABLE]*
+*Analysis script for data collected using PL imaging setup, publication DOI: https://doi.org/10.1021/acsenergylett.2c01094
 
 *Developer: Akash Dasgupta*
 
