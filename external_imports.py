@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d as inter
 import scipy.integrate as integrate
 import matplotlib.patches as patches
 import matplotlib.patheffects as PathEffects
-import scipy.fftpack as sfft
+from scipy.interpolate import UnivariateSpline
 
 '''
 Here we pull in a bunch of imports all the scripts will need, and pull all calibrations into memory.
@@ -52,7 +52,7 @@ with open(r"../calibration_data/ledwavel.csv", "r") as file:
     for row in reader:
         led_spec_wavel.append(float(row[0]))
         led_spec.append(float(row[1]))
-ledspecf = inter(led_spec_wavel, led_spec)
+led_specf = inter(led_spec_wavel, led_spec)
 del led_spec_wavel
 del led_spec
 #######################################################################################
