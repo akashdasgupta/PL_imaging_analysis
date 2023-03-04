@@ -49,17 +49,3 @@ def copy_led_sm_data(datapath, savepath):
         copyfile(f"{datapath}/camera/exposure_list.csv", f"{savepath}/exposure_list.csv")
 
 
-def open_wavelabs_data(filepath):
-    V = []
-    I = []
-    with open(filepath,'r') as file:
-        reader = csv.reader(file, delimiter='\t')
-        for row in reader:
-            try:
-                V.append(float(row[0]))
-                I.append(float(row[1]))
-            except:
-                pass
-    return np.array(V), np.array(I)
-
-

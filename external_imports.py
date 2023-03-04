@@ -30,6 +30,7 @@ del area
 #######################################################################################
 # LED powermeter calibration:
 
+# Import LED calibration
 nominal_v_cal = []
 num_photons = []
 with open(r"../calibration_data/ledcal.csv", "r") as file:
@@ -37,9 +38,10 @@ with open(r"../calibration_data/ledcal.csv", "r") as file:
     for row in reader:
         nominal_v_cal.append(float(row[0]))
         num_photons.append(float(row[1]))
-ledf = inter(nominal_v_cal, num_photons)  # function
-del nominal_v_cal  # Free up memory
-del num_photons
+# Spline fit LED cal   
+LED_spline_fit = UnivariateSpline(nominal_v_cal, np.log(num_photons), k=3, s=0.05)
+def ledf(x):
+    return np.exp(LED_spline_fit(x))
 #######################################################################################
 # LED spectrum (From Thorlabs):
 

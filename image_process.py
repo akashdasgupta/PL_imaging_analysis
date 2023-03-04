@@ -12,50 +12,6 @@ num_cores = multiprocessing.cpu_count()
 from external_imports import *
 from basic_funcs import *
 
-def averager(basepath, filenames):
-    '''
-    Opens and returns average of tiff files
-    '''
-    temp = np.array(Image.open(basepath+'/'+filenames[0]))
-    rows, cols = temp.shape
-    del temp
-
-    buffer = np.zeros((rows, cols))
-    for filename in filenames:
-        im = np.array(Image.open(basepath+'/'+filename), dtype=np.float32) # So there's enough headroom for the uint16
-        buffer += im
-        del im # unnescesary but just in case
-    average_arr = buffer / len(filenames)
-    del buffer # unnescesary but just in case
-    return average_arr
-
-
-def white_nonunif(imarr, center_row, center_col, diam):
-    """
-    Returns array corosponding to per-pixel scale factor for photodiode measured flux
-    * Takes mean of area equal to photodiode area, and sets this mean as the photodiode measurement
-    * Normalises then for nonuniformaty
-    """
-    pix_in_powermeter = []
-    for i in range(imarr.shape[0]):
-        for j in range(imarr.shape[1]):
-            if( (i-center_row)**2 + (j-center_col)**2) <= (diam/2)**2:
-                pix_in_powermeter.append(imarr[i,j])
-    cal_arr = deepcopy(imarr)
-    return cal_arr/ np.mean(pix_in_powermeter)
-
-def beam_correct(imarr, white_imarr_norm, ref_imarr, ledv, rmin, rmax, cmin, cmax):
-    """
-    Corrects for effect of beam nonuniformity in the raw counts image
-    """ 
-    cropped_white_norm = white_imarr_norm[rmin:rmax, cmin:cmax]
-    cropped_raw_image = imarr[rmin:rmax, cmin:cmax]
-    cropped_ref_imarr = ref_imarr[rmin:rmax, cmin:cmax]
-
-    overall_photon_flux = ledf(ledv)
-    photon_flux_on_cell = np.mean(cropped_white_norm)*overall_photon_flux
-
-    return photon_flux_on_cell, ((cropped_raw_image-cropped_ref_imarr)/cropped_white_norm)*np.mean(cropped_white_norm)
 
 def white_over_cell_correction(led_specf, cell_specf, bandgap, camQEf, lenscalf, white_reflectivity, filterODf):
     wavel_range =  np.arange(300, 1000, 1)
@@ -170,8 +126,6 @@ def external_PLQE_averager(datapath, savepath):
             correction = ext_PLQE_1sun / np.mean([pix_ave_plqe[i] for i in  pix_ave_plqe.keys()])
             print(pix_ave_plqe, ext_PLQE_1sun)
 
-
-
             for pix in path_db[key]:
                 filenames = find_npy(f"{savepath}/{key}/{pix}/PLQE_{bias}")
                 for filename in filenames:
@@ -179,81 +133,7 @@ def external_PLQE_averager(datapath, savepath):
                     corrected_arr = arr * correction
                     np.save(f"{savepath}/{key}/{pix}/PLQE_{bias}/{filename}", corrected_arr)
 
-
-
             else:
                 # We assume the file holds the oc value
                 pass # I'll do this later
-
-
-def fftbin(imagepath): 
-    cart_im = np.load(imagepath)
-    
-    # Figure out freq. spacing
-    dx = 1 / pixels_per_cm # cm in 1 pix
-    dxP = 1 / (dx * cart_im.shape[0])
-    dyP = 1 / (dx * cart_im.shape[0])
-            
-    r_binwidth = 1.5
-    r_max = np.sqrt((cart_im.shape[0]*dxP)**2 + (cart_im.shape[0]*dyP)**2)/2
-    r_binedges = np.arange(0, r_max, r_binwidth)
-    
-    theta_summed = np.zeros(r_binedges.shape)
-    theta_num  = np.zeros(r_binedges.shape)
-    np.save('temp1', theta_summed)
-    np.save('temp2', theta_num)
-    
-    def process_row(k):
-        theta_summed = np.load('temp1.npy', mmap_mode='r+')
-        theta_num = np.load('temp2.npy', mmap_mode='r+')
-        for i in range(cart_im.shape[0]):
-            for j in range(cart_im.shape[1]):
-                x = (i - cart_im.shape[0]/2)*dxP
-                y = (cart_im.shape[1]/2 - j)*dyP
-                r = np.sqrt(x**2 + y**2)
-
-                r_binedge = r_binedges[k]
-                if r_binedge <= r < r_binedge + r_binwidth:
-                    theta_summed[k] += cart_im[i,j]
-                    theta_num += 1
-    
-    
-    Parallel(n_jobs=num_cores, verbose = 0)(delayed(process_row)(k) for k in range(len(r_binedges)))
-    
-    theta_summed_f = np.load('temp1.npy')
-    theta_num_f = np.load('temp2.npy')
-    os.remove('temp1.npy')
-    os.remove('temp2.npy')
-    
-    
-    return r_binedges, theta_summed_f / theta_num_f
-            
-
-
-
-white_buffer=[None, None, None, None]
-def callback_return_size(image_name, shape):
-    colstart, rowstart, width, height = shape.size
-    rowend = rowstart+height
-    colend = colstart+width
-    
-    white_buffer[0] = rowstart
-    white_buffer[1] = rowend
-    white_buffer[2] = colstart
-    white_buffer[3] = colend
-
-
-cell_borders={}
-def callback_return_pix_size(image_name, shape):
-    colstart, rowstart, width, height = shape.size
-    rowend = rowstart+height
-    colend = colstart+width
-    
-    pix_buffer=[]
-    pix_buffer.append(rowstart)
-    pix_buffer.append(rowend)
-    pix_buffer.append(colstart)
-    pix_buffer.append(colend)
-
-    cell_borders[image_name] = pix_buffer
 
